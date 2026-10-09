@@ -73,7 +73,7 @@ function aliasMark(n: number): string {
   if (n === 3) return place(FIGURE[12](GOLD), 34, 86, 36);
   if (n === 2) {
     return `<circle cx="34" cy="86" r="17" fill="none" stroke="${GOLD}" stroke-width="3.5"/>`
-      + `<text x="34" y="95" text-anchor="middle" font-family="Alegreya SC, Georgia, serif" font-weight="700" font-size="25" fill="${GOLD}">1</text>`;
+      + `<text x="34" y="95" text-anchor="middle" font-family="Atkinson Hyperlegible, system-ui, sans-serif" font-weight="700" font-size="25" fill="${GOLD}">1</text>`;
   }
   return '';
 }
@@ -90,7 +90,7 @@ export function cardSvg(c: Card): string {
   }
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
     + `<rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="16" fill="#FBF8F1" stroke="#D9D2C2" stroke-width="2"/>`
-    + `<text x="14" y="58" font-family="Alegreya SC, Georgia, serif" font-weight="700" font-size="58" fill="${color}">${c.n}</text>`
+    + `<text x="14" y="58" font-family="Atkinson Hyperlegible, system-ui, sans-serif" font-weight="700" font-size="58" fill="${color}">${c.n}</text>`
     + aliasMark(c.n)
     + body
     + '</svg>';

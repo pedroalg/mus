@@ -43,3 +43,11 @@ export const cmpJuego = (a: Card[], b: Card[]) => JUEGO_ORDER.indexOf(total(b)) 
 export const juegoValue = (h: Card[]) => (total(h) === 31 ? 3 : 2);
 
 export const cmpPunto = (a: Card[], b: Card[]) => total(a) - total(b);
+
+const SHORT: Record<number, string> = { 1: 'As', 4: '4', 5: '5', 6: '6', 7: '7', 10: 'S', 11: 'C', 12: 'R' };
+
+/** La mano en corto, de mayor a menor o al revés: «R R 7 4». */
+export function handText(h: Card[], order: 'desc' | 'asc'): string {
+  const rs = h.map(rank).sort((a, b) => (order === 'desc' ? b - a : a - b));
+  return rs.map(r => SHORT[r]).join(' ');
+}

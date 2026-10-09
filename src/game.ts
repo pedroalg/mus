@@ -45,6 +45,24 @@ export interface LanceResult {
   winner?: number;
 }
 
+/** Una fila del recuento: quién se lleva un lance, cuántos puntos y por qué. */
+export interface ScoreLine {
+  lance: Lance;
+  /** Pareja que se lo lleva, o null si nadie tenía (pares o juego). */
+  team: number | null;
+  pts: number;
+  /** Cómo se resolvió: «En paso», «Envite de 2», «No quisieron»… */
+  how: string;
+  /** Las jugadas que cuentan, por jugador: «Derecha: R R 7 4», «Tú: 31». */
+  plays: { seat: number; text: string }[];
+}
+
+export interface HandResult {
+  lines: ScoreLine[];
+  /** Si la partida acaba en esta mano, por qué. */
+  end?: string;
+}
+
 class GameOver extends Error {}
 
 export class Game {
@@ -92,8 +110,8 @@ export class Game {
     return this.deck.pop()!;
   }
 
-  /** Juega una mano completa y devuelve las líneas del recuento. */
-  async playHand(): Promise<string[]> {
+  /** Juega una mano completa y devuelve el recuento. */
+  async playHand(): Promise<HandResult> {
     if (this.handsPlayed++ > 0) this.mano = (this.mano + 1) % 4;
     this.deck = shuffle(newDeck());
     this.discards = [];
@@ -103,7 +121,7 @@ export class Game {
     this.hands = [0, 1, 2, 3].map(() => [this.draw(), this.draw(), this.draw(), this.draw()]);
     this.ev.newHand?.();
     this.ev.update();
-    const summary: string[] = [];
+    const result: HandResult = { lines: [] };
     try {
       await this.musPhase();
       await this.partnerSenas();
@@ -113,16 +131,16 @@ export class Game {
       this.current = null;
       this.phase = 'Recuento';
       this.reveal = true;
-      this.score(summary);
+      this.score(result.lines);
     } catch (e) {
       if (!(e instanceof GameOver)) throw e;
-      summary.push(e.message);
+      result.end = e.message;
     }
     this.current = null;
     this.turn = null;
     this.reveal = true;
     this.ev.update();
-    return summary;
+    return result;
   }
 
   private async musPhase() {
@@ -141,7 +159,7 @@ export class Game {
           this.discards.push(this.hands[s][i]);
           this.hands[s][i] = this.draw();
         }
-        await this.ev.say(s, `Me descarto de ${idx.length}`);
+        await this.ev.say(s, `Cambio ${idx.length}`);
       }
     }
   }
@@ -269,38 +287,58 @@ export class Game {
     throw new GameOver(msg);
   }
 
-  private score(summary: string[]) {
+  /** Lo que lleva un jugador en un lance, en pocas palabras. */
+  private playText(lance: Lance, seat: number): string {
+    const h = this.hands[seat];
+    if (lance === 'grande') return R.handText(h, 'desc');
+    if (lance === 'chica') return R.handText(h, 'asc');
+    if (lance === 'pares') return R.PARES_NAME[R.pares(h).kind];
+    return String(R.total(h));
+  }
+
+  /** Recuento: suma los puntos lance a lance, en orden, y para si alguien llega al final. */
+  private score(lines: ScoreLine[]) {
     for (const res of this.results) {
-      if (res.state === 'nadie' || res.state === 'noquerido' && (res.lance === 'grande' || res.lance === 'chica' || res.lance === 'punto')) continue;
+      const line: ScoreLine = { lance: res.lance, team: null, pts: 0, how: '', plays: [] };
+      lines.push(line);
+      if (res.state === 'nadie') {
+        line.how = 'Nadie tiene';
+        continue;
+      }
       const w = res.state === 'noquerido' || res.state === 'solo'
         ? res.winner!
         : team(this.lanceWinner(res.lance, res.players));
+      line.team = w;
       let pts = 0;
-      const parts: string[] = [];
-      if (res.state === 'paso' && res.lance !== 'pares' && res.lance !== 'juego') {
-        pts += 1;
-        parts.push('en paso');
-      }
-      if (res.state === 'querido') {
+      if (res.state === 'paso') {
+        if (res.lance === 'pares' || res.lance === 'juego') {
+          line.how = 'Sin envite';
+        } else {
+          line.how = 'En paso';
+          pts += 1;
+        }
+      } else if (res.state === 'querido') {
+        line.how = `Envite de ${res.amount}`;
         pts += res.amount;
-        parts.push(`${res.amount} de envite`);
+      } else if (res.state === 'noquerido') {
+        // Lo del «no quiero» ya se cobró durante la mano
+        line.how = w === 0 ? 'No quisieron' : 'No quisisteis';
+        line.pts += res.amount;
+      } else if (res.state === 'solo') {
+        line.how = 'Sin envite: solo una pareja';
       }
-      for (const s of res.players) {
-        if (team(s) !== w) continue;
-        if (res.lance === 'pares') {
-          const p = R.pares(this.hands[s]);
-          pts += p.kind;
-          parts.push(`${R.PARES_NAME[p.kind]} de ${SEAT_NAME[s].toLowerCase()}`);
+      if (res.lance === 'pares' || res.lance === 'juego') {
+        for (const s of res.players) {
+          if (team(s) !== w) continue;
+          pts += res.lance === 'pares' ? R.pares(this.hands[s]).kind : R.juegoValue(this.hands[s]);
+          line.plays.push({ seat: s, text: this.playText(res.lance, s) });
         }
-        if (res.lance === 'juego') {
-          pts += R.juegoValue(this.hands[s]);
-          parts.push(`${R.total(this.hands[s])} de ${SEAT_NAME[s].toLowerCase()}`);
-        }
+      } else if (res.state !== 'noquerido') {
+        const best = this.lanceWinner(res.lance, res.players);
+        line.plays.push({ seat: best, text: this.playText(res.lance, best) });
       }
-      if (pts > 0) {
-        summary.push(`${LANCE_NAME[res.lance]}: +${pts} ${TEAM_NAME[w].toLowerCase()} (${parts.join(', ')})`);
-        this.award(w, pts);
-      }
+      line.pts += pts;
+      if (pts > 0) this.award(w, pts);
     }
   }
 }

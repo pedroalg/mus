@@ -30,9 +30,9 @@ async function startGame() {
 
   try {
     while (game.winner === null) {
-      const summary = await game.playHand();
+      const result = await game.playHand();
       ui.check(gen);
-      await ui.showSummary(summary, game.winner);
+      await ui.showSummary(result, game.winner);
     }
   } catch (e) {
     if (e instanceof Abort) return;

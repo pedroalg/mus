@@ -1,14 +1,13 @@
 import type { Card } from './cards.ts';
-import type { Agent, Bet, BetCtx, Events, Game, Lance, LanceResult, Reply, ReplyCtx, Sena } from './game.ts';
+import type { Agent, Bet, BetCtx, Events, Game, HandResult, Lance, LanceResult, Reply, ReplyCtx, Sena } from './game.ts';
 import { LANCE_NAME, SEAT_NAME, TEAM_NAME } from './game.ts';
 import { rank } from './cards.ts';
-import { pares, total, hasJuego, juegoValue, PARES_NAME } from './rules.ts';
+import { pares, total, hasJuego, juegoValue, handText, PARES_NAME } from './rules.ts';
 import { strength } from './bots.ts';
 import { BOT_DELAY, type Settings } from './settings.ts';
 import { backSvg, cardSvg } from './cardArt.ts';
 
 const NAME: Record<number, string> = { 1: 'as', 10: 'sota', 11: 'caballo', 12: 'rey' };
-const SHORT: Record<number, string> = { 1: 'As', 4: '4', 5: '5', 6: '6', 7: '7', 10: 'S', 11: 'C', 12: 'R' };
 const PLURAL: Record<number, string> = {
   1: 'ases', 4: 'cuatros', 5: 'cincos', 6: 'seises', 7: 'sietes', 10: 'sotas', 11: 'caballos', 12: 'reyes',
 };
@@ -37,8 +36,8 @@ function grade(s: number): string {
 /** Chuleta con lo que llevas en cada lance, para quien no se acuerda de las reglas. */
 function valuesHtml(h: Card[]): string {
   const rs = h.map(rank);
-  const down = [...rs].sort((a, b) => b - a).map(r => SHORT[r]).join(' ');
-  const up = [...rs].sort((a, b) => a - b).map(r => SHORT[r]).join(' ');
+  const down = handText(h, 'desc');
+  const up = handText(h, 'asc');
   const p = pares(h);
   const t = total(h);
   let paresText: string;
@@ -101,7 +100,7 @@ const AYUDA_KEY = 'mus.ayudaOpen';
  * Un botón de respuesta. `slot` fija su columna (0 a 3) para que cada tipo de respuesta
  * caiga siempre en el mismo sitio: 0 rechazar o pasar, 1 aceptar, 2 subir, 3 órdago.
  */
-interface Option<T> { label: string; value: T; kind?: 'primary' | 'danger'; slot?: number }
+interface Option<T> { label: string; value: T; kind?: 'primary' | 'danger'; slot?: number; confirm?: string }
 
 /** La seña en pocas palabras para la ficha del compañero: «tiene dos reyes» → «dos reyes». */
 const senaShort = (meaning: string) => meaning.replace(/^tiene /, '').replace(/,.*$/, '');
@@ -352,6 +351,16 @@ export class Ui implements Events {
         b.textContent = o.label;
         if (o.kind) b.className = o.kind;
         b.onclick = () => {
+          // Las decisiones graves piden un segundo toque, para que un roce no cueste la partida
+          if (o.confirm && !b.classList.contains('armed')) {
+            b.classList.add('armed');
+            b.textContent = o.confirm;
+            setTimeout(() => {
+              b.classList.remove('armed');
+              b.textContent = o.label;
+            }, 3000);
+            return;
+          }
           this.rejectPending = null;
           this.myTurn(false);
           bar.innerHTML = '';
@@ -405,15 +414,33 @@ export class Ui implements Events {
     });
   }
 
-  async showSummary(lines: string[], winner: number | null) {
+  /** Hoja de recuento: quién se lleva cada lance y por qué, y las cuatro manos a la vista. */
+  async showSummary(result: HandResult, winner: number | null) {
+    const g = this.game;
     const el = $('#summary');
-    const title = winner === null ? 'Fin de la mano' : winner === 0 ? '¡Ganáis la partida!' : 'Ganan ellos la partida';
-    el.innerHTML = `<h2>${title}</h2><ul>${(lines.length ? lines : ['Nada que contar']).map(l => `<li>${l}</li>`).join('')}</ul>`;
+    const title = winner === null ? 'Recuento' : winner === 0 ? '¡Ganáis la partida!' : 'Ganan ellos la partida';
+    const rows = result.lines.map(l => {
+      const who = l.team === null ? '<span class="who none">Nadie</span>'
+        : `<span class="who t${l.team}">${TEAM_NAME[l.team]}</span>`;
+      const plays = l.plays.map(p => `${SEAT_NAME[p.seat]}: ${p.text}`).join(' · ');
+      const detail = [l.how, plays].filter(Boolean).join(' · ');
+      return `<div class="sr"><span class="sr-lance">${LANCE_NAME[l.lance]}</span>${who}`
+        + `<span class="sr-pts${l.team === null ? ' none' : ` t${l.team}`}">${l.pts ? `+${l.pts}` : '—'}</span>`
+        + `<span class="sr-detail">${detail}</span></div>`;
+    }).join('');
+    // Manos agrupadas por pareja: vosotros arriba, ellos abajo
+    const hands = [0, 2, 3, 1].map(s => `<div class="sh"><span class="sh-name t${s % 2}">${SEAT_NAME[s]}`
+      + `${s === g.mano ? ' <span class="mano">Mano</span>' : ''}</span>`
+      + `<div class="sh-cards">${g.hands[s].map(c => `<div class="card">${cardSvg(c)}</div>`).join('')}</div>`
+      + `<span class="sh-info">${describe(g.hands[s])}</span></div>`).join('');
+    el.innerHTML = `<h2>${title}</h2>`
+      + (result.end ? `<p class="sum-end">${result.end}</p>` : '')
+      + (rows ? `<div class="sum-lines">${rows}</div>` : '')
+      + `<div class="sum-hands">${hands}</div>`;
     el.hidden = false;
-    $('#log').hidden = true;
+    el.scrollTop = 0;
     await this.choose('', [{ label: winner === null ? 'Siguiente mano' : 'Ver resultado', value: 0, kind: 'primary' }], false);
     el.hidden = true;
-    $('#log').hidden = false;
   }
 }
 
@@ -440,7 +467,7 @@ export class Human implements Agent {
       { label: 'Paso', value: { kind: 'paso' }, slot: 0 },
       { label: 'Envido', value: { kind: 'envido', amount: 2 }, kind: 'primary', slot: 1 },
       { label: 'Envido 5', value: { kind: 'envido', amount: 5 }, slot: 2 },
-      { label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3 },
+      { label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3, confirm: '¿Seguro?' },
     ]);
   }
 
@@ -452,7 +479,7 @@ export class Human implements Agent {
     ];
     if (!ordago) {
       opts.push({ label: '+2', value: { kind: 'envido', amount: 2 }, slot: 2 });
-      opts.push({ label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3 });
+      opts.push({ label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3, confirm: '¿Seguro?' });
     }
     return this.ui.choose(ordago ? `¡Órdago a ${name}!` : `Os envidan ${amount} a ${name}`, opts);
   }

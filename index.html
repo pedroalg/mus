@@ -1,38 +1,38 @@
 <title>Mus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
-/* Mesa de bar vista desde arriba: tapete verde con carril de madera, naipes crema.
+/* Mesa plana: tapete verde liso, superficies algo más claras, sin sombras ni brillos.
+   Fuente Atkinson Hyperlegible, pensada para leer con baja visión.
    Rejilla 3x3: compañero arriba, rivales a los lados, tu mano abajo y el marcador de lances en el centro.
    Diseño de un solo tema a propósito: el tapete es el mismo de día y de noche. */
 :root {
-  --felt: #1d4a37;
-  --felt-hi: #2a6049;
-  --felt-deep: #12301f;
-  --rail: #4a2e1b;
+  --felt: #1E4D3B;
+  --felt-hi: #2F6B53;
+  --felt-deep: #173E2F;
   --card: #f6efdf;
   --card-edge: #d8cbae;
   --ink: #221c15;
   --ink-dim: #77684f;
-  --chalk: #efe7d2;
-  --chalk-dim: #a9bba9;
-  --line: rgba(239, 231, 210, 0.16);
-  --shade: rgba(0, 0, 0, 0.26);
-  --gold: #e0b23c;
+  --chalk: #F6F3EA;
+  --chalk-dim: #9DB8AA;
+  --line: rgba(246, 243, 234, 0.12);
+  --shade: #285E49;
+  --gold: #F2C14E;
   --good: #94d48c;
-  --us: #f1cf68;
-  --them: #ef9373;
+  --us: #F2C14E;
+  --them: #F08A6C;
 
-  --display: "Alegreya SC", Georgia, serif;
-  --body: "Alegreya Sans", system-ui, sans-serif;
+  --display: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, sans-serif;
   --cw: clamp(62px, min(10.5vw, 11vh), 118px);
   --cw-side: clamp(38px, min(6vw, 7.5vh), 72px);
   color-scheme: dark;
 }
 html, body { height: 100%; }
 body {
-  background: var(--felt-deep);
+  background: var(--felt);
   color: var(--chalk);
   font-family: var(--body);
   font-size: 16px;
@@ -46,8 +46,7 @@ body {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   padding-inline: 16px;
-  background: radial-gradient(ellipse at 50% 45%, var(--felt-hi), var(--felt) 55%, var(--felt-deep));
-  box-shadow: inset 0 0 0 7px var(--rail), inset 0 0 50px 16px rgba(0, 0, 0, 0.4);
+  background: var(--felt);
 }
 
 /* Cabecera: marcador */
@@ -62,7 +61,7 @@ body {
 .brand { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: 0.06em; }
 .score { display: flex; align-items: baseline; gap: 14px; font-variant-numeric: tabular-nums; }
 .score .team { display: flex; align-items: baseline; gap: 6px; }
-.score .team span { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chalk-dim); }
+.score .team span { font-size: 13px; letter-spacing: 0.08em; color: var(--chalk-dim); }
 .score b { font-family: var(--display); font-size: 30px; line-height: 1; }
 .score .t0 b { color: var(--us); }
 .score .t1 b { color: var(--them); }
@@ -95,11 +94,9 @@ body {
 .seat-1 .name, .seat-3 .name { color: var(--them); }
 /* Ficha de mano: un disco dorado que no se puede pasar por alto */
 .mano {
-  font-family: var(--body); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--body); font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
   background: var(--gold); color: var(--ink); border-radius: 99px; padding: 3px 9px;
-  box-shadow: 0 0 0 3px rgba(224, 178, 60, 0.3), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
-.seat.is-mano .hand { filter: drop-shadow(0 0 10px rgba(224, 178, 60, 0.45)); }
 /* Quién habla ahora */
 .seat.is-turn .name { border-color: var(--chalk); background: var(--shade); }
 .seat.is-turn .name::after {
@@ -116,9 +113,9 @@ body {
 }
 .v {
   display: flex; flex-direction: column; gap: 2px; min-width: 0;
-  padding: 6px 10px; border-radius: 8px; background: var(--shade); border: 1px solid var(--line);
+  padding: 6px 10px; border-radius: 8px; background: var(--shade);
 }
-.vl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--chalk-dim); }
+.vl { font-size: 11px; letter-spacing: 0.1em; color: var(--chalk-dim); }
 .vt { font-size: 15px; font-weight: 500; line-height: 1.25; }
 .g { font-style: normal; font-size: 12px; font-weight: 700; }
 .g3 { color: var(--good); }
@@ -130,7 +127,7 @@ body {
 .seat-1 .hand, .seat-2 .hand, .seat-3 .hand { --w: var(--cw-side); gap: 0; }
 .seat-1 .card + .card, .seat-2 .card + .card, .seat-3 .card + .card {
   margin-left: calc(var(--w) * -0.38);
-  box-shadow: -3px 0 6px rgba(0, 0, 0, 0.4), 0 6px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: -1px 0 2px rgba(0, 0, 0, 0.25);
 }
 
 .card {
@@ -139,7 +136,7 @@ body {
   aspect-ratio: 200 / 316;
   position: relative;
   border-radius: calc(var(--cardw) * 0.08);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2), 0 6px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transition: transform 0.18s ease, opacity 0.18s ease;
 }
 .card svg { display: block; width: 100%; height: 100%; pointer-events: none; }
@@ -152,7 +149,6 @@ body {
   background: var(--chalk); color: var(--ink);
   font-family: var(--display); font-weight: 700; font-size: 17px;
   padding: 5px 12px; border-radius: 14px; white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 .seat-2 .bubble { top: auto; bottom: -6px; transform: translate(-50%, 100%); }
 .bubble.pop { animation: pop 0.22s ease-out; }
@@ -164,10 +160,10 @@ body {
 .senas {
   display: flex; flex-direction: column; gap: 4px;
   padding: 8px 12px; border-radius: 10px;
-  border: 1px dashed var(--us); background: var(--shade);
+  background: var(--shade);
   font-size: 15px;
 }
-.senas .sl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--us); }
+.senas .sl { font-size: 11px; letter-spacing: 0.1em; color: var(--us); }
 .senas b { color: var(--us); }
 .log em { font-style: normal; color: var(--us); }
 
@@ -193,10 +189,6 @@ body {
 .st.t1 { background: var(--them); }
 .st.on { background: var(--chalk); }
 
-.summary { background: var(--shade); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
-.summary h2 { font-family: var(--display); font-size: 22px; margin: 0 0 6px; text-wrap: balance; }
-.summary ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
-
 .log {
   list-style: none; margin: 0; padding: 0 12px; max-height: 6.6em; min-height: 0; flex: 0 1 auto; overflow: auto;
   font-size: 13px; line-height: 1.5; color: var(--chalk-dim);
@@ -215,7 +207,7 @@ body {
 button {
   font-family: var(--display); font-weight: 700; font-size: 19px;
   min-height: 50px; padding: 0 22px; border-radius: 12px;
-  border: 1px solid var(--line); background: var(--shade); color: var(--chalk);
+  border: 0; background: var(--shade); color: var(--chalk);
   cursor: pointer; touch-action: manipulation;
 }
 /* Botones de respuesta en columnas fijas: rechazar, aceptar, subir, órdago */
@@ -239,6 +231,44 @@ button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 @keyframes bump { 30% { transform: scale(1.4); } }
 body.no-ayuda .seat-0 .info { display: none; }
 
+/* Hoja de recuento, encima de la mesa y por debajo de la barra de botones */
+.summary {
+  position: fixed; z-index: 35; left: 50%; transform: translateX(-50%);
+  top: calc(env(safe-area-inset-top, 0px) + 60px); bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+  width: min(560px, calc(100% - 20px)); box-sizing: border-box; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 16px; border-radius: 16px; background: var(--felt-deep);
+}
+.summary[hidden] { display: none; }
+.summary h2 { margin: 0; font-size: 26px; }
+.sum-end { margin: -6px 0 0; font-size: 17px; color: var(--chalk-dim); }
+.sum-lines { display: grid; gap: 6px; }
+.sr {
+  display: grid; grid-template-columns: 4.4em minmax(0, 1fr) auto; align-items: center; gap: 2px 10px;
+  padding: 10px 12px; border-radius: 10px; background: var(--shade);
+}
+.sr-lance { font-weight: 700; font-size: 17px; }
+.who { justify-self: start; font-weight: 700; font-size: 15px; padding: 2px 10px; border-radius: 99px; color: var(--ink); }
+.who.t0 { background: var(--us); }
+.who.t1 { background: var(--them); }
+.who.none { background: transparent; color: var(--chalk-dim); padding-left: 0; }
+.sr-pts { font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+.sr-pts.t0 { color: var(--us); }
+.sr-pts.t1 { color: var(--them); }
+.sr-pts.none { color: var(--chalk-dim); }
+.sr-detail { grid-column: 1 / -1; font-size: 15px; color: var(--chalk-dim); }
+.sum-hands { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sh { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: var(--shade); min-width: 0; }
+.sh-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+.sh-name.t0 { color: var(--us); }
+.sh-name.t1 { color: var(--them); }
+.sh-cards { display: flex; }
+.sh-cards .card { --w: 25%; width: 25%; box-shadow: -1px 0 2px rgba(0, 0, 0, 0.25); }
+.sh-info { font-size: 15px; color: var(--chalk-dim); }
+
+/* Órdago armado: pide un segundo toque */
+button.armed { background: var(--chalk); color: var(--ink); }
+
 /* Piezas que solo se ven en el móvil */
 .said, .sena-line, .now-lance, .ayuda-btn, .ayuda-panel { display: none; }
 .me-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -246,14 +276,13 @@ body.no-ayuda .seat-0 .info { display: none; }
 /* Te toca: borde dorado en toda la pantalla */
 body.my-turn #app::after {
   content: ''; position: fixed; inset: 0; z-index: 40; pointer-events: none;
-  border: 6px solid var(--gold);
-  box-shadow: inset 0 0 28px rgba(224, 178, 60, 0.5);
-  animation: turnin 0.6s ease-out;
+  border: 5px solid var(--gold);
+  animation: turnin 0.4s ease-out;
 }
-@keyframes turnin { from { opacity: 0; } 40% { opacity: 1; box-shadow: inset 0 0 70px rgba(224, 178, 60, 0.85); } }
+@keyframes turnin { from { opacity: 0; } }
 .tetoca {
   display: inline-block; margin-right: 10px; vertical-align: 2px;
-  font-family: var(--body); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: var(--body); font-weight: 700; font-size: 13px; letter-spacing: 0.1em;
   background: var(--gold); color: var(--ink); padding: 3px 9px; border-radius: 99px;
 }
 
@@ -263,8 +292,7 @@ body.my-turn #app::after {
   display: grid; place-items: center; overflow-y: auto;
   padding: max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
            max(20px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-  background: radial-gradient(ellipse at 50% 30%, var(--felt-hi), var(--felt) 50%, var(--felt-deep));
-  box-shadow: inset 0 0 0 7px var(--rail), inset 0 0 60px 20px rgba(0, 0, 0, 0.45);
+  background: var(--felt);
 }
 .menu-inner { display: flex; flex-direction: column; align-items: center; gap: 28px; }
 .menu-hero { display: flex; flex-direction: column; align-items: center; }
@@ -280,7 +308,6 @@ body.my-turn #app::after {
 .title {
   margin: 10px 0 0; font-family: var(--display); font-weight: 700;
   font-size: clamp(68px, 18vw, 120px); line-height: 0.9; letter-spacing: 0.1em; padding-left: 0.1em;
-  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
 }
 .tagline { margin: 8px 0 0; font-family: var(--display); font-size: 16px; color: var(--chalk-dim); text-align: center; }
 .menu-btns { display: flex; flex-direction: column; gap: 10px; width: min(280px, 100%); }
@@ -294,7 +321,6 @@ body.my-turn #app::after {
   position: sticky; top: calc(-1 * max(20px, env(safe-area-inset-top, 0px))); z-index: 1;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding-block: 12px; background: var(--felt);
-  border-bottom: 1px solid var(--line);
 }
 .sheet-head h2 { margin: 0; font-family: var(--display); font-size: 28px; }
 .sheet-head .back { min-height: 42px; font-size: 16px; }
@@ -314,17 +340,17 @@ body.my-turn #app::after {
 .settings fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
 .settings legend { font-family: var(--display); font-size: 19px; padding: 0; margin-bottom: 8px; }
 .hint { margin: 0; font-size: 14px; color: var(--chalk-dim); }
-.seg { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--shade); }
+.seg { display: flex; border-radius: 12px; overflow: hidden; background: var(--shade); }
 .seg label { flex: 1; position: relative; }
-.seg label + label { border-left: 1px solid var(--line); }
+.seg label + label { border-left: 1px solid var(--felt); }
 .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
 .seg span { display: block; padding: 13px 8px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 17px; }
 .seg input:checked + span { background: var(--us); color: var(--ink); }
 .seg input:focus-visible + span { outline: 3px solid var(--chalk); outline-offset: -3px; }
 
 .go-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
-.kicker { margin: 0; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--chalk-dim); }
-#go-title { margin: 0; font-family: var(--display); font-size: clamp(56px, 14vw, 96px); line-height: 1; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); }
+.kicker { margin: 0; font-size: 13px; letter-spacing: 0.14em; color: var(--chalk-dim); }
+#go-title { margin: 0; font-family: var(--display); font-size: clamp(56px, 14vw, 96px); line-height: 1; }
 #go-title.won { color: var(--us); }
 #go-title.lost { color: var(--them); }
 .go-sub { margin: 0; font-size: 17px; }
@@ -336,10 +362,7 @@ body.my-turn #app::after {
 
 /* El recuento ocupa el sitio de los lances en pantallas pequeñas */
 @media (max-width: 600px), (max-height: 500px) {
-  .center:has(#summary:not([hidden])) .lances,
-  .center:has(#summary:not([hidden])) .senas { display: none; }
   .log { display: none; }
-  .center:has(#summary:not([hidden])) .now-lance { display: none; }
 
   /* Mesa simplificada: los bots son fichas con su nombre y lo último que han dicho */
   .seat-1 .card.back, .seat-2 .card.back, .seat-3 .card.back { display: none; }
@@ -363,7 +386,7 @@ body.my-turn #app::after {
   .lances { display: none; }
   .now-lance {
     display: grid; justify-items: center; gap: 6px; text-align: center;
-    padding: 10px 12px; border-radius: 14px; background: var(--shade); border: 1px solid var(--line);
+    padding: 10px 12px; border-radius: 14px; background: var(--shade);
   }
   .nl-name { font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1; }
   .nl-status { font-size: 21px; font-weight: 700; min-height: 1.2em; }
@@ -409,7 +432,6 @@ body.my-turn #app::after {
     position: fixed; z-index: 30; overflow-y: auto;
     padding: 12px; border-radius: 16px;
     background: var(--felt-deep); border: 2px solid var(--us);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   }
   .ayuda-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .ayuda-head span { font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--us); }
@@ -420,9 +442,6 @@ body.my-turn #app::after {
   .ayuda-panel .vt { font-size: 20px; }
   .ayuda-panel .g { font-size: 15px; }
 
-  .summary { padding: 8px 12px; }
-  .summary h2 { font-size: 18px; }
-  .summary ul { font-size: 13px; padding-left: 16px; }
 }
 
 /* iPhone en vertical */
@@ -430,7 +449,7 @@ body.my-turn #app::after {
   /* Tus cartas, grandes y algo solapadas: el número de la esquina queda siempre a la vista */
   :root { --cw: min(28vw, 124px); --cw-side: 34px; }
   .seat-0 .hand { gap: 0; }
-  .seat-0 .card + .card { margin-left: calc(var(--cw) * -0.22); box-shadow: -4px 0 8px rgba(0, 0, 0, 0.35), 0 6px 14px rgba(0, 0, 0, 0.3); }
+  .seat-0 .card + .card { margin-left: calc(var(--cw) * -0.22); box-shadow: -1px 0 2px rgba(0, 0, 0, 0.25); }
   #app { padding-inline: 10px; }
   .bar { padding-block: 10px 2px; padding-inline: 2px; gap: 8px; }
   .brand span { display: none; }
@@ -562,12 +581,13 @@ body.my-turn #app::after {
       <div class="now-lance" id="now" aria-live="polite"></div>
       <div class="senas" id="senas" hidden></div>
       <ol class="lances" id="lances" aria-label="Lances"></ol>
-      <div class="summary" id="summary" hidden></div>
       <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
     </section>
     <section class="seat seat-1"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
     <section class="seat seat-0"><div class="me-row"><div class="name"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
   </main>
+
+  <section class="summary" id="summary" aria-live="polite" hidden></section>
 
   <aside class="ayuda-panel" id="ayuda" aria-label="Tus jugadas" hidden>
     <div class="ayuda-head"><span>Tus jugadas</span><button id="ayuda-close">Cerrar</button></div>

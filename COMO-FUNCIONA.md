@@ -238,8 +238,9 @@ Toda la mano está en la función `playHand()`, que lee casi como un guion:
 5. **`playLance('grande')`** y **`playLance('chica')`**.
 6. **`declareAndPlay()`**: cada uno dice si tiene pares y se juega el lance de pares con los
    que tienen; luego lo mismo con el juego. Si nadie tiene juego, se juega al punto.
-7. **`score()`**: el recuento. Suma los puntos de cada lance y devuelve las frases que ves
-   en el resumen de la mano.
+7. **`score()`**: el recuento. Suma los puntos de cada lance, en orden, y devuelve una fila
+   por lance (`ScoreLine`): qué pareja se lo lleva, cuántos puntos y por qué. La pantalla
+   convierte esas filas en la hoja de recuento.
 
 ### Los envites (`playLance` y `envite`)
 
@@ -337,7 +338,8 @@ Los diseños de cada tipo de pantalla están en bloques que empiezan por `@media
 - **`choose()`** pinta los botones de una pregunta, enciende el aviso de turno y espera
   a que pulses uno. Cada botón lleva una columna fija (`slot`): 0 rechazar o pasar,
   1 aceptar, 2 subir y 3 órdago, para que cada tipo de respuesta caiga siempre en el mismo sitio. **`pickDiscards()`** hace lo mismo para elegir descartes.
-- **`showSummary()`** enseña el recuento de la mano.
+- **`showSummary()`** enseña la hoja de recuento: una fila por lance y las cuatro manos.
+- Las decisiones graves, como el órdago, piden un segundo toque (`confirm` en el botón).
 - La clase **`Human`** traduce cada pregunta del árbitro en botones: «Mus / No hay mus»,
   «Paso / Envido / Envido 5 / Órdago», etc.
 
