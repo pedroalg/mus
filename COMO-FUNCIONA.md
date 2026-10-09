@@ -45,7 +45,8 @@ mus/
 │   ├── avatars.ts        Las caras de los bots y sus gestos para las señas
 │   ├── rules.ts          Comparar manos: grande, chica, pares, juego y punto
 │   ├── game.ts           El árbitro: desarrollo de una mano completa
-│   ├── bots.ts           Cómo deciden los bots y qué señas hace tu compañero
+│   ├── bots.ts           Cómo deciden los bots según el nivel, y las señas
+│   ├── ai.ts             El cálculo de probabilidades de los niveles normal y difícil
 │   ├── ui.ts             La mesa en pantalla y tus botones
 │   ├── menu.ts           Menú de inicio, reglas, ajustes y fin de partida
 │   ├── settings.ts       Ajustes y partidas ganadas, guardados en el dispositivo
@@ -284,28 +285,65 @@ solo enseña lo que el árbitro le cuenta.
 
 ---
 
-## 7. Cómo piensan los bots (`bots.ts`)
+## 7. Cómo piensan los bots (`bots.ts` y `ai.ts`)
 
-### La fuerza de una mano
+Hay tres niveles, que se eligen en Ajustes.
 
-`strength(lance, mano)` da una nota de 0 a 1 para cada lance. Por ejemplo, en grande cada rey
-suma 0,27, así que tres reyes ya dan más de 0,8. La chuleta que ves debajo de tus cartas
-usa esta misma nota: **buena** (0,7 o más), **regular** (0,45 o más) o **floja**.
+### Fácil: solo sus cartas
 
-### Sus decisiones
+`strength(lance, mano)` da una nota de 0 a 1 para cada lance mirando solo las cartas propias
+(en grande, cada rey suma 0,27). La chuleta que ves debajo de tus cartas usa esta misma nota:
+**buena** (0,7 o más), **regular** (0,45 o más) o **floja**. En fácil, el bot envida con nota
+mayor de 0,6 y quiere si su nota supera un listón que sube con la apuesta.
 
-| Decisión | Cómo la toma |
+### Normal y difícil: simular repartos
+
+`outlook()` (en `ai.ts`) reparte al azar, cientos de veces, las cartas que el bot no ve, y
+**descarta los repartos que no encajan con lo que se sabe en la mesa**:
+
+- lo que ha declarado cada uno («pares sí», «juego no»…);
+- las señas que le ha hecho su compañero (una seña de 31 solo deja repartos en los que el
+  compañero suma 31);
+- los envites: quien ha envidado en un lance casi seguro que lleva buena mano para él, salvo
+  farol.
+
+De los repartos que quedan saca la probabilidad de que su pareja gane el lance, y los puntos
+de pares o juego que se espera llevar cada pareja. El árbitro apunta todo eso en `TableInfo`
+y se lo pasa a cada bot cuando le pregunta.
+
+Con esos datos el bot decide:
+
+| Decisión | Cómo |
 |---|---|
-| **Mus** | Corta si tiene 31, medias o duples, tres reyes, o pareja de figuras con juego. |
-| **Descarte** | Se queda con reyes, ases y las cartas que forman pares, y tira el resto. |
-| **Envidar** | Con nota > 0,9 echa órdago una de cada cinco veces. Con nota > 0,6 envida (más cuanto mejor). Un 8 % de las veces se tira un farol. |
-| **Responder** | Quiere si su nota supera un listón que sube con la apuesta (0,42 más 0,025 por cada tanto). Con mucha ventaja a veces sube 2, y con nota > 0,92 a veces echa órdago. A un órdago solo dice quiero con nota > 0,82. |
+| **Mus** | Corta con buena mano, o si su compañero le ha hecho una seña de mano buena. |
+| **Envidar** | Envida si su pareja gana el lance más de un 62 % de las veces, y más fuerte cuanto más seguro. Un 5 % de farol. |
+| **Querer** | Compara lo que espera ganar o perder queriendo con lo que pierde seguro al no querer (lo que ya había en la mesa y, en pares y juego, los puntos de las jugadas de los rivales). |
+
+**Normal** simula 150 repartos, se fía a medias de los envites rivales y comete algún error
+de cálculo. **Difícil** simula 400, se fía más de los envites, mira el marcador (se juega un
+órdago cuando los rivales están a punto de ganar, y no lo acepta a la ligera cuando va ganando)
+y sus rivales se pasan señas entre ellos, sin que tú las veas.
+
+### Tu compañero piensa en ti
+
+Iñaki trata tus declaraciones, tus envites y tus señas igual que las de cualquier compañero:
+si le guiñas un ojo, solo considera repartos en los que tú tienes 31.
 
 ### Las señas
 
-`senasFor(mano)` mira la mano y devuelve todas las señas que encajan, de la más importante
-a la menos (31, duples, medias, tres reyes, dos reyes, tres ases, dos ases, ciego).
-El compañero hace seña en un 65 % de las manos, y a veces hace dos.
+`senasFor(mano)` devuelve las señas que encajan con una mano, de la más importante a la menos
+(31, duples, medias, tres reyes, dos reyes, tres ases, dos ases, ciego). Cada bot hace seña en
+un 65 % de las manos, y a veces dos. Tú las haces con el botón 😉 de tu fila.
+
+### Comprobar que los niveles funcionan
+
+`scripts/torneo.ts` enfrenta dos niveles durante cientos de partidas:
+
+```bash
+node scripts/torneo.ts dificil normal 400
+```
+
+Al hacerlos, normal ganaba a fácil un 56 % de las partidas y difícil a normal un 59 %.
 
 ---
 
@@ -425,7 +463,9 @@ npm test
 - `rules.test.ts`: comprueba las comparaciones (por ejemplo, que el 3 cuenta como rey, o que
   31 gana a 32 y 32 a 40).
 - `senas.test.ts`: comprueba que cada mano da la seña correcta.
-- `game.test.ts`: juega 200 partidas completas entre cuatro bots y comprueba que todas
+- `ai.test.ts`: comprueba que las señas y los envites cambian las probabilidades como deben, y
+  que tus señas solo le llegan a Iñaki.
+- `game.test.ts`: juega partidas completas entre bots en los tres niveles y comprueba que todas
   terminan sin errores.
 
 Conviene pasarlas antes de publicar si has tocado `rules.ts`, `game.ts` o `bots.ts`.
@@ -440,8 +480,9 @@ Después de cualquier cambio, ejecuta `npm run build` y publica (sección 9).
 en `src/settings.ts`, la línea `const DEFAULTS`. Las pausas de cada velocidad están en
 `BOT_DELAY`, en milisegundos (1.000 = un segundo).
 
-**Bots más atrevidos o más prudentes**: en `src/bots.ts`, funciones `bet` y `reply`.
-Bajar el `0.6` de `bet` hace que envíen más; subir el `0.42` de `reply` hace que acepten menos.
+**Bots más atrevidos o más prudentes**: en `src/bots.ts`, funciones `bet` y `reply`. En
+normal y difícil, bajar el `0.62` de `bet` hace que envíen más. Después de tocarlos, compara
+niveles con `scripts/torneo.ts` para ver si juegan mejor o peor.
 
 **Más o menos señas del compañero**: en `src/bots.ts`, función `senas`. El `0.35` es la
 probabilidad de **no** hacer seña.

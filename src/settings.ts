@@ -1,17 +1,19 @@
 // Ajustes y marcador de partidas, guardados en este dispositivo.
 
 export type Speed = 'lenta' | 'normal' | 'rapida';
+export type Level = 'facil' | 'normal' | 'dificil';
 
 export interface Settings {
   target: number;
   speed: Speed;
   senas: boolean;
   ayuda: boolean;
+  nivel: Level;
 }
 
 export interface Stats { won: number; lost: number }
 
-const DEFAULTS: Settings = { target: 40, speed: 'normal', senas: true, ayuda: true };
+const DEFAULTS: Settings = { target: 40, speed: 'normal', senas: true, ayuda: true, nivel: 'normal' };
 const SETTINGS_KEY = 'mus.settings';
 const STATS_KEY = 'mus.stats';
 

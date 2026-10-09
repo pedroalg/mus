@@ -309,6 +309,27 @@ button.armed { background: var(--chalk); color: var(--ink); }
 
 /* Piezas que solo se ven en el móvil */
 .ayuda-btn, .ayuda-panel { display: none; }
+.sena-btn { min-width: 48px; min-height: 44px; padding: 0 10px; font-size: 20px; }
+.sena-btn[aria-expanded="true"] { background: var(--us); }
+.pop-panel {
+  position: fixed; z-index: 32; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  width: min(440px, calc(100% - 20px)); max-height: 70vh; box-sizing: border-box; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px; border-radius: 16px; background: var(--felt-deep); border: 2px solid var(--us);
+}
+.pop-panel .ayuda-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pop-panel .ayuda-head span { font-weight: 700; font-size: 20px; color: var(--us); }
+.pop-panel .ayuda-head button { min-height: 44px; font-size: 15px; padding: 0 14px; }
+.pop-hint { margin: 0; font-size: 14px; color: var(--chalk-dim); }
+.sena-list { display: grid; gap: 6px; }
+.sena-opt {
+  display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  text-align: left; font-family: var(--body); font-size: 16px; font-weight: 400; padding: 8px 12px;
+}
+.sena-opt b { font-weight: 700; color: var(--us); }
+.sena-opt.rec { box-shadow: inset 0 0 0 2px var(--us); }
+.sena-opt.sent { opacity: 0.55; }
 .said {
   display: block; align-self: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 3px 12px; border-radius: 12px; background: var(--chalk); color: var(--ink);
@@ -613,10 +634,16 @@ body.my-turn #app::after {
       <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
     </section>
     <section class="seat seat-1"><div class="said" aria-live="polite"></div><div class="who"><div class="avatar"></div><div class="who-txt"><div class="name"></div></div></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
-    <section class="seat seat-0"><div class="me-row"><div class="name"></div><div class="said" aria-live="polite"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-0"><div class="me-row"><div class="name"></div><div class="said" aria-live="polite"></div><button class="sena-btn" id="sena-btn" aria-controls="sena-panel" aria-expanded="false" aria-label="Hacer una seña a Iñaki">😉</button><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
   </main>
 
   <section class="summary" id="summary" aria-live="polite" hidden></section>
+
+  <aside class="pop-panel" id="sena-panel" aria-label="Señas a Iñaki" hidden>
+    <div class="ayuda-head"><span>Seña a Iñaki</span><button id="sena-close">Cerrar</button></div>
+    <p class="pop-hint">Solo la ve tu compañero, y la tendrá en cuenta al jugar. Las marcadas encajan con tu mano.</p>
+    <div class="sena-list" id="sena-list"></div>
+  </aside>
 
   <aside class="ayuda-panel" id="ayuda" aria-label="Tus jugadas" hidden>
     <div class="ayuda-head"><span>Tus jugadas</span><button id="ayuda-close">Cerrar</button></div>
@@ -679,7 +706,7 @@ body.my-turn #app::after {
       <p>Si todos pasan en grande, chica o punto, el lance vale 1 punto para quien lo gane. Los pares y el juego siempre suman sus puntos.</p>
 
       <h3>Señas</h3>
-      <p>Tu compañero te hará señas de vez en cuando para contarte qué lleva:</p>
+      <p>Tu compañero te hará señas de vez en cuando para contarte qué lleva. Tú también puedes hacérselas con el botón 😉 de tu fila, y él las tendrá en cuenta al jugar (también lo que declaras y lo que envidas).</p>
       <table class="senas-table">
         <tr><td>😉 Guiña un ojo</td><td>31</td></tr>
         <tr><td>🤨 Levanta las cejas</td><td>Duples</td></tr>
@@ -705,6 +732,15 @@ body.my-turn #app::after {
           <label><input type="radio" name="target" value="40" id="t40"><span>40 puntos</span></label>
         </div>
         <p class="hint">Se aplica a la próxima partida.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Nivel de los bots</legend>
+        <div class="seg">
+          <label><input type="radio" name="nivel" value="facil" id="nv-f"><span>Fácil</span></label>
+          <label><input type="radio" name="nivel" value="normal" id="nv-n"><span>Normal</span></label>
+          <label><input type="radio" name="nivel" value="dificil" id="nv-d"><span>Difícil</span></label>
+        </div>
+        <p class="hint">Fácil: miran solo sus cartas. Normal: calculan sus opciones y leen los envites. Difícil: calculan mejor, miran el marcador y los rivales se pasan señas. Se aplica a la próxima partida.</p>
       </fieldset>
       <fieldset>
         <legend>Velocidad de los bots</legend>

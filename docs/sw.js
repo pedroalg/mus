@@ -1,7 +1,7 @@
 // Service worker: guarda el juego en el iPad para poder jugar sin conexión.
 // La página se pide primero a la red (para recibir actualizaciones) y, si no hay red, sale de la caché.
 // El resto (iconos, fuentes) sale de la caché y solo se pide a la red la primera vez.
-const CACHE = 'mus-b4fe8e5322';
+const CACHE = 'mus-3835c7d84a';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

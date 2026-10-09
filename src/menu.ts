@@ -116,6 +116,7 @@ export class Menu {
     set('speed', s.speed);
     set('senas', s.senas ? 'si' : 'no');
     set('ayuda', s.ayuda ? 'si' : 'no');
+    set('nivel', s.nivel);
   }
 
   private readSettings(form: HTMLFormElement): Settings {
@@ -125,6 +126,7 @@ export class Menu {
       speed: get('speed') as Settings['speed'],
       senas: get('senas') === 'si',
       ayuda: get('ayuda') === 'si',
+      nivel: get('nivel') as Settings['nivel'],
     };
   }
 }

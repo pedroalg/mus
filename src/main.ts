@@ -11,8 +11,16 @@ ui.applySettings(loadSettings());
 async function startGame() {
   const settings = loadSettings();
   ui.applySettings(settings);
-  const partner = new Bot();
-  partner.senasOn = settings.senas;
+  // Los tres bots juegan al nivel elegido. Los rivales se pasan señas entre ellos (sin que las
+  // veas) salvo en fácil; las de Iñaki dependen del ajuste «Señas del compañero».
+  const bot = (senas: boolean) => {
+    const b = new Bot();
+    b.level = settings.nivel;
+    b.senasOn = senas;
+    return b;
+  };
+  const rivalSenas = settings.nivel !== 'facil';
+  const partner = bot(settings.senas);
 
   // Los avisos de la partida pasan por aquí para que una partida abandonada se corte sola.
   let gen = 0;
@@ -23,7 +31,7 @@ async function startGame() {
     lanceDone: async r => { ui.check(gen); await ui.lanceDone(r); ui.check(gen); },
     update: () => { if (gen === ui.gen) ui.update(); },
   };
-  const game = new Game([new Human(ui), new Bot(), partner, new Bot()], ev, settings.target);
+  const game = new Game([new Human(ui), bot(rivalSenas), partner, bot(rivalSenas)], ev, settings.target);
   game.mano = Math.floor(Math.random() * 4);
   gen = ui.newSession(game);
   menu.inGame = true;

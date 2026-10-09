@@ -3,7 +3,7 @@ import type { Agent, Bet, BetCtx, Events, Game, HandResult, Lance, LanceResult, 
 import { LANCE_NAME, SEAT_NAME, TEAM_NAME, team } from './game.ts';
 import { rank } from './cards.ts';
 import { pares, total, hasJuego, juegoValue, handText, PARES_NAME } from './rules.ts';
-import { strength } from './bots.ts';
+import { SENAS, senasFor, strength } from './bots.ts';
 import { BOT_DELAY, type Settings } from './settings.ts';
 import { backSvg, cardSvg } from './cardArt.ts';
 import { avatarSvg, type Expr } from './avatars.ts';
@@ -100,6 +100,13 @@ const PHASE_HINT: Record<string, string> = {
 };
 const AYUDA_KEY = 'mus.ayudaOpen';
 
+/** Cómo se llama cada seña cuando la haces tú. */
+const SENA_LABEL: Record<keyof typeof SENAS, string> = {
+  wink: 'Guiñar un ojo', brows: 'Levantar las cejas', smirk: 'Torcer la boca',
+  biteSide: 'Morder el labio de lado', bite: 'Morder el labio',
+  tongueSide: 'Sacar la lengua de lado', tongue: 'Sacar la punta de la lengua', closed: 'Cerrar los ojos',
+};
+
 /**
  * Un botón de respuesta. `slot` fija su columna (0 a 3) para que cada tipo de respuesta
  * caiga siempre en el mismo sitio: 0 rechazar o pasar, 1 aceptar, 2 subir, 3 órdago.
@@ -158,10 +165,45 @@ export class Ui implements Events {
     setOpen(open);
     $('#ayuda-btn').onclick = () => setOpen(panel.hidden);
     $('#ayuda-close').onclick = () => setOpen(false);
+
+    // Tus señas a Iñaki
+    $('#sena-btn').onclick = () => this.toggleSenas($('#sena-panel').hidden);
+    $('#sena-close').onclick = () => this.toggleSenas(false);
+    $('#sena-list').addEventListener('click', e => {
+      const b = (e.target as HTMLElement).closest('button[data-e]') as HTMLElement | null;
+      if (!b || !this.canSign()) return;
+      const sena = SENAS[b.dataset.e as keyof typeof SENAS];
+      this.game.humanSena(sena);
+      this.setSaid(0, `${sena.face} a Iñaki`);
+      this.log(`<b>Tú</b> ${SENA_LABEL[b.dataset.e as keyof typeof SENAS].toLowerCase()} <em>(${senaShort(sena.meaning)})</em>`);
+      this.toggleSenas(false);
+    });
+  }
+
+  /** Solo se pueden hacer señas con la mano en juego. */
+  private canSign(): boolean {
+    const g = this.game;
+    return !!g && g.winner === null && g.hands[0].length > 0 && g.phase !== '' && g.phase !== 'Recuento';
+  }
+
+  private toggleSenas(open: boolean) {
+    const panel = $('#sena-panel');
+    if (open && !this.canSign()) open = false;
+    panel.hidden = !open;
+    $('#sena-btn').setAttribute('aria-expanded', String(open));
+    if (!open) return;
+    const rec = new Set(senasFor(this.game.hands[0]).map(x => x.expr));
+    const sent = new Set(this.game.mySenas.map(x => x.expr));
+    $('#sena-list').innerHTML = (Object.keys(SENAS) as (keyof typeof SENAS)[]).map(e => {
+      const x = SENAS[e];
+      return `<button class="sena-opt${rec.has(e) ? ' rec' : ''}${sent.has(e) ? ' sent' : ''}" data-e="${e}">`
+        + `<span class="face">${x.face}</span><span>${SENA_LABEL[e]}</span><b>${senaShort(x.meaning)}</b></button>`;
+    }).join('');
   }
 
   /** Mano nueva: se borra lo último que dijo cada uno. */
   newHand() {
+    this.toggleSenas(false);
     this.saidText = ['', '', '', ''];
     this.partnerExpr = 'neutral';
     clearTimeout(this.exprTimer);

@@ -1,6 +1,7 @@
 import { type Card, newDeck, shuffle } from './cards.ts';
 import * as R from './rules.ts';
 import type { Expr } from './avatars.ts';
+import { partnerOf, type TableInfo } from './ai.ts';
 
 export type Lance = 'grande' | 'chica' | 'pares' | 'juego' | 'punto';
 export const LANCE_NAME: Record<Lance, string> = {
@@ -14,11 +15,16 @@ export const team = (seat: number) => seat % 2;
 export type Bet = { kind: 'paso' } | { kind: 'envido'; amount: number } | { kind: 'ordago' };
 export type Reply = { kind: 'quiero' } | { kind: 'noquiero' } | { kind: 'envido'; amount: number } | { kind: 'ordago' };
 
-export interface BetCtx { seat: number; hand: Card[]; lance: Lance; scores: number[] }
-export interface ReplyCtx extends BetCtx { amount: number; ordago: boolean }
+export interface BetCtx { seat: number; hand: Card[]; lance: Lance; scores: number[]; info: TableInfo }
+export interface ReplyCtx extends BetCtx {
+  amount: number;
+  ordago: boolean;
+  /** Lo que se lleva quien envidó si no se le quiere. */
+  prev: number;
+}
 
 export interface Agent {
-  mus(seat: number, hand: Card[]): Promise<boolean>;
+  mus(seat: number, hand: Card[], info?: TableInfo): Promise<boolean>;
   discard(seat: number, hand: Card[]): Promise<number[]>;
   bet(ctx: BetCtx): Promise<Bet>;
   reply(ctx: ReplyCtx): Promise<Reply>;
@@ -81,6 +87,28 @@ export class Game {
   endReason = '';
   /** Señas que te ha hecho tu compañero en esta mano. */
   senas: Sena[] = [];
+  /** Señas que le has hecho tú a tu compañero en esta mano. */
+  mySenas: Sena[] = [];
+  /** Lo que se sabe en la mesa en esta mano; cada bot lee solo las señas que le tocan. */
+  info: TableInfo = Game.freshInfo(0, 40);
+
+  static freshInfo(mano: number, target: number): TableInfo {
+    return {
+      mano, target, scores: [0, 0],
+      pares: [undefined, undefined, undefined, undefined],
+      juego: [undefined, undefined, undefined, undefined],
+      senasFor: [[], [], [], []],
+      bets: [],
+      passes: [],
+    };
+  }
+
+  /** Tu seña a Iñaki: solo la ve él. */
+  humanSena(sena: Sena) {
+    this.mySenas.push(sena);
+    this.info.senasFor[partnerOf(0)].push(sena.expr);
+    this.ev.update();
+  }
   /** Asiento al que le toca hablar ahora mismo. */
   turn: number | null = null;
   private handsPlayed = 0;
@@ -127,6 +155,8 @@ export class Game {
     this.discards = [];
     this.results = [];
     this.senas = [];
+    this.mySenas = [];
+    this.info = Game.freshInfo(this.mano, this.target);
     this.reveal = false;
     this.hands = [0, 1, 2, 3].map(() => [this.draw(), this.draw(), this.draw(), this.draw()]);
     this.ev.newHand?.();
@@ -158,7 +188,7 @@ export class Game {
       this.phase = 'Mus';
       this.ev.update();
       for (const s of this.order()) {
-        const mus = await this.ask(s, a => a.mus(s, this.hands[s]));
+        const mus = await this.ask(s, a => a.mus(s, this.hands[s], this.tableInfo()));
         await this.ev.say(s, mus ? 'Mus' : 'No hay mus');
         if (!mus) return;
       }
@@ -175,10 +205,15 @@ export class Game {
   }
 
   /** Tu compañero (asiento 2) te pasa señas con las cartas ya definitivas. */
+  /** Señas con las cartas ya definitivas: las de Iñaki las ves tú; las de los rivales, solo ellos. */
   private async partnerSenas() {
+    for (const s of [1, 3]) {
+      for (const sena of this.agents[s].senas?.(this.hands[s]) ?? []) this.info.senasFor[partnerOf(s)].push(sena.expr);
+    }
     const partner = 2;
     for (const sena of this.agents[partner].senas?.(this.hands[partner]) ?? []) {
       this.senas.push(sena);
+      this.info.senasFor[0].push(sena.expr);
       await this.ev.signal?.(partner, sena);
     }
   }
@@ -189,6 +224,7 @@ export class Game {
     const conPares: number[] = [];
     for (const s of this.order()) {
       const tiene = R.pares(this.hands[s]).kind > 0;
+      this.info.pares[s] = tiene;
       await this.ev.say(s, tiene ? 'Pares sí' : 'Pares no');
       if (tiene) conPares.push(s);
     }
@@ -199,6 +235,7 @@ export class Game {
     const conJuego: number[] = [];
     for (const s of this.order()) {
       const tiene = R.hasJuego(this.hands[s]);
+      this.info.juego[s] = tiene;
       await this.ev.say(s, tiene ? 'Juego sí' : 'Juego no');
       if (tiene) conJuego.push(s);
     }
@@ -206,8 +243,12 @@ export class Game {
     else await this.playLance('punto', this.order());
   }
 
+  private tableInfo(): TableInfo {
+    return { ...this.info, scores: [...this.scores], mano: this.mano, target: this.target };
+  }
+
   private ctx(seat: number, lance: Lance): BetCtx {
-    return { seat, hand: this.hands[seat], lance, scores: [...this.scores] };
+    return { seat, hand: this.hands[seat], lance, scores: [...this.scores], info: this.tableInfo() };
   }
 
   private async playLance(lance: Lance, players: number[]) {
@@ -227,7 +268,9 @@ export class Game {
       for (const s of players) {
         const b = await this.ask(s, a => a.bet(this.ctx(s, lance)));
         await this.ev.say(s, betText(b));
+        if (b.kind === 'paso') this.info.passes.push({ seat: s, lance });
         if (b.kind !== 'paso') {
+          this.info.bets.push({ seat: s, lance });
           await this.envite(res, team(s), b);
           envidado = true;
           break;
@@ -257,7 +300,7 @@ export class Game {
       if (ordago) res.state = 'ordago';
       this.ev.update();
       const s = this.responder(res.players, 1 - attacker);
-      const r = await this.ask(s, a => a.reply({ ...this.ctx(s, res.lance), amount, ordago }));
+      const r = await this.ask(s, a => a.reply({ ...this.ctx(s, res.lance), amount, ordago, prev }));
       await this.ev.say(s, replyText(r));
       if (r.kind === 'quiero') break;
       if (r.kind === 'noquiero') {
@@ -268,6 +311,7 @@ export class Game {
         return;
       }
       prev = amount;
+      this.info.bets.push({ seat: s, lance: res.lance });
       if (r.kind === 'ordago') ordago = true;
       else amount += r.amount;
       attacker = 1 - attacker;
