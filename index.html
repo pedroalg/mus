@@ -248,6 +248,24 @@ button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 @keyframes bump { 30% { transform: scale(1.4); } }
 body.no-ayuda .seat-0 .info { display: none; }
 
+/* Piezas que solo se ven en el móvil */
+.said, .now-lance, .ayuda-btn, .ayuda-panel { display: none; }
+.me-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+/* Te toca: borde dorado en toda la pantalla */
+body.my-turn #app::after {
+  content: ''; position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  border: 6px solid var(--gold);
+  box-shadow: inset 0 0 28px rgba(224, 178, 60, 0.5);
+  animation: turnin 0.6s ease-out;
+}
+@keyframes turnin { from { opacity: 0; } 40% { opacity: 1; box-shadow: inset 0 0 70px rgba(224, 178, 60, 0.85); } }
+.tetoca {
+  display: inline-block; margin-right: 10px; vertical-align: 2px;
+  font-family: var(--body); font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--gold); color: var(--ink); padding: 3px 9px; border-radius: 99px;
+}
+
 /* Pantallas: menú, reglas, ajustes y final */
 .screen {
   position: fixed; inset: 0; z-index: 50;
@@ -330,6 +348,68 @@ body.no-ayuda .seat-0 .info { display: none; }
   .center:has(#summary:not([hidden])) .lances,
   .center:has(#summary:not([hidden])) .senas { display: none; }
   .log { display: none; }
+  .center:has(#summary:not([hidden])) .now-lance { display: none; }
+
+  /* Mesa simplificada: los bots son fichas con su nombre y lo último que han dicho */
+  .seat-1 .card.back, .seat-2 .card.back, .seat-3 .card.back { display: none; }
+  .seat-1 .hand:not(:has(.card:not(.back))), .seat-2 .hand:not(:has(.card:not(.back))), .seat-3 .hand:not(:has(.card:not(.back))),
+  .seat .info:empty { display: none; }
+  .seat-1, .seat-2, .seat-3 {
+    align-self: stretch; justify-content: flex-start; min-width: 0;
+    padding: 6px 6px 8px; border-radius: 12px; background: var(--shade); border: 2px solid transparent;
+  }
+  .seat.is-turn:not(.seat-0) { border-color: var(--chalk); }
+  .seat.is-turn:not(.seat-0) .name { border-color: transparent; background: none; }
+  .seat.is-mano:not(.seat-0) .hand { filter: none; }
+  .seat-1 .bubble, .seat-2 .bubble, .seat-3 .bubble { display: none !important; }
+  .said {
+    display: block; min-height: 1.25em; text-align: center;
+    font-size: 18px; font-weight: 700; line-height: 1.2; color: var(--chalk);
+  }
+  .said.pop { animation: pop 0.22s ease-out; }
+
+  /* El lance que se juega, en grande */
+  .lances { display: none; }
+  .now-lance {
+    display: grid; justify-items: center; gap: 6px; text-align: center;
+    padding: 10px 12px; border-radius: 14px; background: var(--shade); border: 1px solid var(--line);
+  }
+  .nl-name { font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1; }
+  .nl-status { font-size: 21px; font-weight: 700; min-height: 1.2em; }
+  .nl-status.t0 { color: var(--us); }
+  .nl-status.t1 { color: var(--them); }
+  .nl-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+  .pill { font-size: 13px; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--chalk-dim); }
+  .pill b { color: var(--chalk); font-weight: 700; }
+  .pill.now { border-color: var(--chalk); color: var(--chalk); }
+  .pill.t0 b { color: var(--us); }
+  .pill.t1 b { color: var(--them); }
+
+  /* Chuleta plegable */
+  .seat-0 .info { display: none; }
+  .ayuda-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: 38px; padding: 0 12px; font-size: 15px;
+    border-color: var(--us); color: var(--us);
+  }
+  .ayuda-btn[aria-expanded="true"] { background: var(--us); color: var(--ink); }
+  body.no-ayuda .ayuda-btn, body.no-ayuda .ayuda-panel { display: none !important; }
+  .ayuda-panel:not([hidden]) {
+    display: flex; flex-direction: column; gap: 8px;
+    position: fixed; z-index: 30; overflow-y: auto;
+    padding: 12px; border-radius: 16px;
+    background: var(--felt-deep); border: 2px solid var(--us);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+  .ayuda-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .ayuda-head span { font-family: var(--display); font-weight: 700; font-size: 22px; color: var(--us); }
+  .ayuda-head button { min-height: 40px; font-size: 15px; padding: 0 14px; }
+  .ayuda-body { display: grid; gap: 6px; }
+  .ayuda-panel .v { display: grid; grid-template-columns: 5.2em minmax(0, 1fr) auto; align-items: baseline; gap: 10px; padding: 10px 12px; }
+  .ayuda-panel .vl { font-size: 13px; }
+  .ayuda-panel .vt { font-size: 20px; }
+  .ayuda-panel .g { font-size: 15px; }
+
   .summary { padding: 8px 12px; }
   .summary h2 { font-size: 18px; }
   .summary ul { font-size: 13px; padding-left: 16px; }
@@ -337,7 +417,10 @@ body.no-ayuda .seat-0 .info { display: none; }
 
 /* iPhone en vertical */
 @media (max-width: 600px) {
-  :root { --cw: min(22vw, 92px); --cw-side: 34px; }
+  /* Tus cartas, grandes y algo solapadas: el número de la esquina queda siempre a la vista */
+  :root { --cw: min(28vw, 124px); --cw-side: 34px; }
+  .seat-0 .hand { gap: 0; }
+  .seat-0 .card + .card { margin-left: calc(var(--cw) * -0.22); box-shadow: -4px 0 8px rgba(0, 0, 0, 0.35), 0 6px 14px rgba(0, 0, 0, 0.3); }
   #app { padding-inline: 10px; }
   .bar { padding-block: 10px 2px; padding-inline: 2px; gap: 8px; }
   .brand span { display: none; }
@@ -348,7 +431,13 @@ body.no-ayuda .seat-0 .info { display: none; }
   .score .sep { font-size: 11px; }
   .phase { font-size: 16px; min-width: 0; }
   .phase small { font-size: 11px; }
-  .table { grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr); gap: 6px 6px; padding-block: 4px; }
+  .table {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "s3 s2 s1" "center center center" "s0 s0 s0";
+    gap: 8px 6px; padding-block: 4px;
+  }
+  .center { max-width: none; gap: 8px; }
+  .ayuda-panel:not([hidden]) { top: calc(env(safe-area-inset-top, 0px) + 58px); left: 10px; right: 10px; max-height: 58vh; }
   .name { font-size: 14px; padding: 1px 6px; gap: 4px; }
   .seat-1 .name, .seat-3 .name { flex-direction: column; }
   .mano { font-size: 10px; padding: 2px 6px; }
@@ -378,7 +467,7 @@ body.no-ayuda .seat-0 .info { display: none; }
 
 /* iPhone en horizontal: rivales y compañero en una fila arriba, tu mano y tu chuleta debajo */
 @media (max-height: 500px) and (orientation: landscape) {
-  :root { --cw: min(20vh, 9vw, 84px); --cw-side: min(9vh, 40px); }
+  :root { --cw: min(25vh, 11vw, 104px); --cw-side: min(9vh, 40px); }
   #app {
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
@@ -403,13 +492,17 @@ body.no-ayuda .seat-0 .info { display: none; }
   .info { font-size: 11px; min-height: 0; }
   .seat-1 .bubble, .seat-2 .bubble, .seat-3 .bubble { top: auto; bottom: -4px; transform: translate(-50%, 100%); }
   .bubble { font-size: 14px; padding: 3px 9px; }
-  .seat-0 {
-    display: grid; grid-template-columns: auto minmax(0, 290px); grid-template-areas: "name ." "hand info";
-    justify-content: center; align-items: center; align-self: center; gap: 2px 14px;
+  .seat-0 { align-self: center; gap: 4px; }
+  .said { font-size: 16px; }
+  .nl-name { font-size: 24px; }
+  .nl-status { font-size: 18px; }
+  .now-lance { padding: 8px 10px; gap: 4px; }
+  .ayuda-btn { min-height: 32px; font-size: 14px; }
+  .ayuda-panel:not([hidden]) {
+    top: 46px; bottom: 60px; left: max(12px, env(safe-area-inset-left, 0px)); width: min(36vw, 310px);
   }
-  .seat-0 .name { grid-area: name; justify-self: center; }
-  .seat-0 .hand { grid-area: hand; }
-  .seat-0 .info { grid-area: info; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .ayuda-panel .v { grid-template-columns: 4.6em minmax(0, 1fr) auto; gap: 8px; padding: 8px 10px; }
+  .ayuda-panel .vt { font-size: 18px; }
   .v { padding: 3px 8px; }
   .vl { font-size: 10px; }
   .vt { font-size: 13px; }
@@ -451,17 +544,23 @@ body.no-ayuda .seat-0 .info { display: none; }
   </header>
 
   <main class="table">
-    <section class="seat seat-2"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
-    <section class="seat seat-3"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-2"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-3"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
     <section class="center">
+      <div class="now-lance" id="now" aria-live="polite"></div>
       <div class="senas" id="senas" hidden></div>
       <ol class="lances" id="lances" aria-label="Lances"></ol>
       <div class="summary" id="summary" hidden></div>
       <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
     </section>
-    <section class="seat seat-1"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
-    <section class="seat seat-0"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-1"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-0"><div class="me-row"><div class="name"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false">💡 Mis jugadas</button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
   </main>
+
+  <aside class="ayuda-panel" id="ayuda" aria-label="Tus jugadas" hidden>
+    <div class="ayuda-head"><span>Tus jugadas</span><button id="ayuda-close">Cerrar</button></div>
+    <div class="ayuda-body" id="ayuda-body"></div>
+  </aside>
 
   <footer class="actions" id="actions" aria-live="polite"></footer>
 </div>

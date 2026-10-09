@@ -77,6 +77,44 @@ function statusHtml(r: LanceResult | undefined): string {
   }
 }
 
+/** Estado del lance en una frase, para el panel grande del móvil. */
+function statusLong(r: LanceResult | undefined): string {
+  if (!r) return 'Declarando…';
+  switch (r.state) {
+    case 'hablando': return 'Hablando…';
+    case 'paso': return 'En paso';
+    case 'nadie': return 'Nadie tiene';
+    case 'solo': return r.winner === 0 ? 'Solo vosotros: no se apuesta' : 'Solo ellos: no se apuesta';
+    case 'envite': return r.winner === 0 ? `Envidáis ${r.amount}` : `Os envidan ${r.amount}`;
+    case 'querido': return `${r.amount} querido`;
+    case 'noquerido': return `No quiero: +${r.amount} ${TEAM_NAME[r.winner!].toLowerCase()}`;
+    case 'ordago':
+      if (r.winner === undefined) return 'Órdago querido';
+      return r.winner === 0 ? 'Echáis órdago' : '¡Os echan órdago!';
+  }
+}
+
+function statusShort(r: LanceResult | undefined): string {
+  if (!r) return '—';
+  switch (r.state) {
+    case 'hablando': return '…';
+    case 'paso': return 'paso';
+    case 'nadie': return 'nadie';
+    case 'solo': return 'solo';
+    case 'envite': return `${r.amount}?`;
+    case 'querido': return String(r.amount);
+    case 'noquerido': return `+${r.amount}`;
+    case 'ordago': return 'órdago';
+  }
+}
+
+const PHASE_HINT: Record<string, string> = {
+  Mus: '¿Hay mus?',
+  Descartes: 'Cada uno cambia sus cartas',
+  Recuento: 'Contando los puntos',
+};
+const AYUDA_KEY = 'mus.ayudaOpen';
+
 interface Option<T> { label: string; value: T; kind?: 'primary' | 'danger' }
 
 /** Se lanza dentro de una partida abandonada para que deje de jugar. */
@@ -109,6 +147,32 @@ export class Ui implements Events {
       this.update();
       this.onSelect?.();
     });
+
+    const panel = $('#ayuda');
+    const setOpen = (open: boolean) => {
+      panel.hidden = !open;
+      $('#ayuda-btn').setAttribute('aria-expanded', String(open));
+      try { localStorage.setItem(AYUDA_KEY, open ? '1' : ''); } catch { /* sin almacenamiento */ }
+    };
+    let open = false;
+    try { open = localStorage.getItem(AYUDA_KEY) === '1'; } catch { /* sin almacenamiento */ }
+    setOpen(open);
+    $('#ayuda-btn').onclick = () => setOpen(panel.hidden);
+    $('#ayuda-close').onclick = () => setOpen(false);
+  }
+
+  /** Mano nueva: se borra lo último que dijo cada uno. */
+  newHand() {
+    for (const el of document.querySelectorAll<HTMLElement>('.said')) el.textContent = '';
+  }
+
+  private setSaid(seat: number, html: string) {
+    const el = document.querySelector<HTMLElement>(`.seat-${seat} .said`);
+    if (!el) return;
+    el.innerHTML = html;
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
   }
 
   /** Empieza una partida nueva y corta la anterior si seguía en marcha. */
@@ -120,6 +184,8 @@ export class Ui implements Events {
     this.selected.clear();
     this.onSelect = null;
     this.unpause();
+    document.body.classList.remove('my-turn');
+    this.newHand();
     this.game = game;
     this.dealtAt.clear();
     this.shownScores = [0, 0];
@@ -167,6 +233,7 @@ export class Ui implements Events {
     clearTimeout(this.timers[seat]);
     this.timers[seat] = window.setTimeout(() => { b.hidden = true; b.classList.remove('sena'); }, 2600);
     this.log(`<b>${SEAT_NAME[seat]}</b> ${sena.gesture} <em>(${sena.meaning})</em>`);
+    this.setSaid(seat, `<span class="face">${sena.face}</span> ${sena.meaning}`);
     this.update();
     await this.wait(Math.max(1400, this.botDelay * 1.8));
   }
@@ -182,6 +249,7 @@ export class Ui implements Events {
     clearTimeout(this.timers[seat]);
     this.timers[seat] = window.setTimeout(() => { b.hidden = true; }, 2200);
     this.log(`<b>${SEAT_NAME[seat]}</b> ${text}`);
+    this.setSaid(seat, text);
     this.update();
     await this.wait(seat === 0 ? 300 : this.botDelay);
   }
@@ -239,7 +307,20 @@ export class Ui implements Events {
       else info.textContent = faceUp && g.hands[s].length ? describe(g.hands[s]) : '';
     }
 
+    const ayuda = $('#ayuda-body');
+    ayuda.innerHTML = g.hands[0].length ? valuesHtml(g.hands[0]) : '';
+
     const last: Lance = g.results.some(r => r.lance === 'punto') ? 'punto' : 'juego';
+    const cur = g.current ? g.results.find(x => x.lance === g.current) : undefined;
+    const curState = cur?.state === 'envite' || cur?.state === 'ordago' && cur.winner !== undefined ? ` t${cur.winner}` : '';
+    $('#now').innerHTML = `<div class="nl-name">${g.current ? LANCE_NAME[g.current] : g.phase}</div>`
+      + `<div class="nl-status${curState}">${g.current ? statusLong(cur) : PHASE_HINT[g.phase] ?? ''}</div>`
+      + '<div class="nl-pills">' + (['grande', 'chica', 'pares', last] as Lance[]).map(l => {
+        const r = g.results.find(x => x.lance === l);
+        const t = r && (r.state === 'noquerido' || r.state === 'solo' || r.state === 'envite') ? ` t${r.winner}` : '';
+        return `<span class="pill${g.current === l ? ' now' : ''}${t}">${LANCE_NAME[l]} <b>${statusShort(r)}</b></span>`;
+      }).join('') + '</div>';
+
     $('#lances').innerHTML = (['grande', 'chica', 'pares', last] as Lance[])
       .map(l => {
         const r = g.results.find(x => x.lance === l);
@@ -260,17 +341,24 @@ export class Ui implements Events {
     return ` style="animation-delay:${Math.round(start - now)}ms" data-deal`;
   }
 
-  choose<T>(prompt: string, opts: Option<T>[]): Promise<T> {
+  /** Te toca: borde dorado en toda la pantalla y etiqueta junto a la pregunta. */
+  private myTurn(on: boolean) {
+    document.body.classList.toggle('my-turn', on);
+  }
+
+  choose<T>(prompt: string, opts: Option<T>[], turn = true): Promise<T> {
     return new Promise((resolve, reject) => {
       this.rejectPending = reject;
+      this.myTurn(turn);
       const bar = $('#actions');
-      bar.innerHTML = prompt ? `<p class="prompt">${prompt}</p>` : '';
+      bar.innerHTML = prompt ? `<p class="prompt">${turn ? '<span class="tetoca">Te toca</span>' : ''}${prompt}</p>` : '';
       for (const o of opts) {
         const b = document.createElement('button');
         b.textContent = o.label;
         if (o.kind) b.className = o.kind;
         b.onclick = () => {
           this.rejectPending = null;
+          this.myTurn(false);
           bar.innerHTML = '';
           resolve(o.value);
         };
@@ -285,10 +373,11 @@ export class Ui implements Events {
     this.update();
     return new Promise((resolve, reject) => {
       this.rejectPending = reject;
+      this.myTurn(true);
       const bar = $('#actions');
       const draw = () => {
         const n = this.selected.size;
-        bar.innerHTML = '<p class="prompt">Toca las cartas que quieres cambiar</p>';
+        bar.innerHTML = '<p class="prompt"><span class="tetoca">Te toca</span>Toca las cartas que quieres cambiar</p>';
         const b = document.createElement('button');
         b.className = 'primary';
         b.textContent = n ? `Descartar ${n}` : 'Descartar';
@@ -296,6 +385,7 @@ export class Ui implements Events {
         b.onclick = () => {
           const idx = [...this.selected];
           this.rejectPending = null;
+          this.myTurn(false);
           this.selecting = false;
           this.selected.clear();
           this.onSelect = null;
@@ -316,7 +406,7 @@ export class Ui implements Events {
     el.innerHTML = `<h2>${title}</h2><ul>${(lines.length ? lines : ['Nada que contar']).map(l => `<li>${l}</li>`).join('')}</ul>`;
     el.hidden = false;
     $('#log').hidden = true;
-    await this.choose('', [{ label: winner === null ? 'Siguiente mano' : 'Ver resultado', value: 0, kind: 'primary' }]);
+    await this.choose('', [{ label: winner === null ? 'Siguiente mano' : 'Ver resultado', value: 0, kind: 'primary' }], false);
     el.hidden = true;
     $('#log').hidden = false;
   }

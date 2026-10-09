@@ -31,6 +31,8 @@ export interface Sena { face: string; gesture: string; meaning: string }
 export interface Events {
   say(seat: number, text: string): Promise<void>;
   signal?(seat: number, sena: Sena): Promise<void>;
+  /** Se acaban de repartir las cartas de una mano nueva. */
+  newHand?(): void;
   update(): void;
 }
 
@@ -99,6 +101,7 @@ export class Game {
     this.senas = [];
     this.reveal = false;
     this.hands = [0, 1, 2, 3].map(() => [this.draw(), this.draw(), this.draw(), this.draw()]);
+    this.ev.newHand?.();
     this.ev.update();
     const summary: string[] = [];
     try {
