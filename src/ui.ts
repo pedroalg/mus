@@ -1,11 +1,12 @@
 import type { Card } from './cards.ts';
 import type { Agent, Bet, BetCtx, Events, Game, HandResult, Lance, LanceResult, Reply, ReplyCtx, Sena } from './game.ts';
-import { LANCE_NAME, SEAT_NAME, TEAM_NAME } from './game.ts';
+import { LANCE_NAME, SEAT_NAME, TEAM_NAME, team } from './game.ts';
 import { rank } from './cards.ts';
 import { pares, total, hasJuego, juegoValue, handText, PARES_NAME } from './rules.ts';
 import { strength } from './bots.ts';
 import { BOT_DELAY, type Settings } from './settings.ts';
 import { backSvg, cardSvg } from './cardArt.ts';
+import { avatarSvg, type Expr } from './avatars.ts';
 
 const NAME: Record<number, string> = { 1: 'as', 10: 'sota', 11: 'caballo', 12: 'rey' };
 const PLURAL: Record<number, string> = {
@@ -125,6 +126,11 @@ export class Ui implements Events {
   /** Momento en que empieza a repartirse cada carta, para animarla una sola vez. */
   private dealtAt = new Map<string, number>();
   private shownScores = [0, 0];
+  /** Lo último que ha dicho cada jugador en esta mano. */
+  private saidText = ['', '', '', ''];
+  /** Gesto del compañero: pone la cara de la seña unos segundos y vuelve a la normal. */
+  private partnerExpr: Expr = 'neutral';
+  private exprTimer = 0;
 
   constructor() {
     $('.seat-0 .hand').addEventListener('click', e => {
@@ -151,10 +157,13 @@ export class Ui implements Events {
 
   /** Mano nueva: se borra lo último que dijo cada uno. */
   newHand() {
-    for (const el of document.querySelectorAll<HTMLElement>('.said')) el.textContent = '';
+    this.saidText = ['', '', '', ''];
+    this.partnerExpr = 'neutral';
+    clearTimeout(this.exprTimer);
   }
 
   private setSaid(seat: number, html: string) {
+    this.saidText[seat] = html;
     const el = document.querySelector<HTMLElement>(`.seat-${seat} .said`);
     if (!el) return;
     el.innerHTML = html;
@@ -221,6 +230,12 @@ export class Ui implements Events {
     clearTimeout(this.timers[seat]);
     this.timers[seat] = window.setTimeout(() => { b.hidden = true; b.classList.remove('sena'); }, 2600);
     this.log(`<b>${SEAT_NAME[seat]}</b> ${sena.gesture} <em>(${sena.meaning})</em>`);
+    this.partnerExpr = sena.expr;
+    clearTimeout(this.exprTimer);
+    this.exprTimer = window.setTimeout(() => {
+      this.partnerExpr = 'neutral';
+      if (this.game) this.update();
+    }, 3000);
     this.update();
     await this.wait(Math.max(1400, this.botDelay * 1.8));
   }
@@ -278,8 +293,17 @@ export class Ui implements Events {
       const el = $(`.seat-${s}`);
       el.classList.toggle('is-mano', s === g.mano);
       el.classList.toggle('is-turn', s === g.turn);
-      el.querySelector('.name')!.innerHTML = (s === g.mano ? '<span class="mano" title="Es mano: habla primero y gana los empates">Mano</span>' : '')
-        + `<span>${SEAT_NAME[s]}</span>`;
+      if (s === 0) {
+        el.querySelector('.name')!.innerHTML = (s === g.mano ? '<span class="mano" title="Es mano: habla primero y gana los empates">Mano</span>' : '')
+          + `<span>${SEAT_NAME[s]}</span>`;
+      } else {
+        // Bots: cara con aro de su pareja (claro si le toca) y la ficha de mano encima, sin mover el nombre
+        const ring = s === g.turn ? 'turn' : team(s) === 0 ? 'us' : 'them';
+        el.querySelector('.avatar')!.innerHTML = avatarSvg(s, s === 2 ? this.partnerExpr : 'neutral', ring)
+          + (s === g.mano ? '<span class="tok" title="Es mano: habla primero y gana los empates">Mano</span>' : '');
+        el.querySelector('.name')!.textContent = SEAT_NAME[s];
+        el.querySelector('.said')!.innerHTML = s === g.turn ? '…' : this.saidText[s];
+      }
       const faceUp = s === 0 || g.reveal;
       const hand = el.querySelector('.hand') as HTMLElement;
       hand.classList.toggle('picking', s === 0 && this.selecting);
@@ -295,8 +319,7 @@ export class Ui implements Events {
     }
 
     const senaLine = $('.seat-2 .sena-line');
-    senaLine.innerHTML = g.senas.map(x => `<span class="face">${x.face}</span> ${senaShort(x.meaning)}`).join(' · ');
-    $('.seat-2').classList.toggle('has-sena', g.senas.length > 0);
+    senaLine.textContent = g.senas.map(x => senaShort(x.meaning)).join(' · ');
 
     const ayuda = $('#ayuda-body');
     ayuda.innerHTML = g.hands[0].length ? valuesHtml(g.hands[0]) : '';
@@ -429,10 +452,10 @@ export class Ui implements Events {
         + `<span class="sr-detail">${detail}</span></div>`;
     }).join('');
     // Manos agrupadas por pareja: vosotros arriba, ellos abajo
-    const hands = [0, 2, 3, 1].map(s => `<div class="sh"><span class="sh-name t${s % 2}">${SEAT_NAME[s]}`
+    const hands = [0, 2, 3, 1].map(s => `<div class="sh"><div class="sh-head"><span class="sh-name t${s % 2}">${SEAT_NAME[s]}`
       + `${s === g.mano ? ' <span class="mano">Mano</span>' : ''}</span>`
-      + `<div class="sh-cards">${g.hands[s].map(c => `<div class="card">${cardSvg(c)}</div>`).join('')}</div>`
-      + `<span class="sh-info">${describe(g.hands[s])}</span></div>`).join('');
+      + `<span class="sh-info">${describe(g.hands[s])}</span></div>`
+      + `<div class="sh-cards">${g.hands[s].map(c => `<div class="card">${cardSvg(c)}</div>`).join('')}</div></div>`).join('');
     el.innerHTML = `<h2>${title}</h2>`
       + (result.end ? `<p class="sum-end">${result.end}</p>` : '')
       + (rows ? `<div class="sum-lines">${rows}</div>` : '')

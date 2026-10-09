@@ -42,6 +42,7 @@ mus/
 ├── src/                  El código del juego (TypeScript)
 │   ├── cards.ts          La baraja: palos, números, barajar, valor de cada carta
 │   ├── cardArt.ts        El dibujo de las cartas (pintas, figuras y reverso)
+│   ├── avatars.ts        Las caras de los bots y sus gestos para las señas
 │   ├── rules.ts          Comparar manos: grande, chica, pares, juego y punto
 │   ├── game.ts           El árbitro: desarrollo de una mano completa
 │   ├── bots.ts           Cómo deciden los bots y qué señas hace tu compañero
@@ -198,9 +199,9 @@ Con 8 reyes, la función `rank` dice lo que **vale** cada carta en el juego:
 | Asiento | Quién | Pareja |
 |---|---|---|
 | 0 | Tú | Nosotros (0) |
-| 1 | Derecha | Ellos (1) |
-| 2 | Compañero | Nosotros (0) |
-| 3 | Izquierda | Ellos (1) |
+| 1 | Paco, a tu derecha | Ellos (1) |
+| 2 | Iñaki, tu compañero | Nosotros (0) |
+| 3 | Maite, a tu izquierda | Ellos (1) |
 
 ---
 
@@ -349,6 +350,13 @@ Las cartas no son imágenes guardadas: se dibujan al vuelo en SVG, un formato de
 formas geométricas que se ve nítido a cualquier tamaño. `cardSvg(carta)` devuelve el dibujo
 de una carta (número en la esquina, pintas o figura, y la marca dorada del 3 y del 2) y
 `backSvg()` el reverso. La receta de la sección 11 explica cómo cambiarlas.
+
+### `avatars.ts`: las caras de los bots
+
+`avatarSvg(asiento, gesto, aro)` dibuja la cara de Paco, Iñaki o Maite. El gesto puede ser
+el normal o uno de los de las señas (guiño, cejas, boca torcida, labio, lengua, ojos
+cerrados), y cada seña de `bots.ts` dice qué gesto pone (`expr`). El aro es del color de la
+pareja, o claro cuando le toca hablar. Los nombres están en `SEAT_NAME`, en `game.ts`.
 
 ### Pausar y abandonar partidas
 

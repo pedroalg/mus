@@ -98,8 +98,8 @@ body {
   background: var(--gold); color: var(--ink); border-radius: 99px; padding: 3px 9px;
 }
 /* Quién habla ahora */
-.seat.is-turn .name { border-color: var(--chalk); background: var(--shade); }
-.seat.is-turn .name::after {
+.seat-0.is-turn .name { border-color: var(--chalk); background: var(--shade); }
+.seat-0.is-turn .name::after {
   content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--chalk);
   animation: blink 1s ease-in-out infinite;
 }
@@ -199,7 +199,7 @@ body {
 
 /* Acciones */
 .actions {
-  min-height: 64px;
+  min-height: 64px; position: relative; z-index: 36;
   display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 16px;
   padding-block: 10px calc(18px + env(safe-area-inset-bottom, 0px));
 }
@@ -231,21 +231,37 @@ button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 @keyframes bump { 30% { transform: scale(1.4); } }
 body.no-ayuda .seat-0 .info { display: none; }
 
+/* Los bots: cara, nombre y, en el compañero, rótulo y seña */
+.who { display: flex; align-items: center; gap: 10px; }
+.who-txt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.avatar { position: relative; width: var(--av, 56px); height: var(--av, 56px); flex: none; }
+.avatar svg { display: block; width: 100%; height: 100%; }
+.seat-2 { --av: 68px; }
+.avatar .tok {
+  position: absolute; right: -8px; bottom: -2px;
+  background: var(--gold); color: var(--ink); font-size: 12px; font-weight: 700;
+  padding: 1px 7px; border-radius: 9px;
+}
+.role { font-size: 13px; color: var(--us); }
+.seat-2 .name { padding-left: 0; }
+.who .name { padding: 0; }
+
 /* Hoja de recuento, encima de la mesa y por debajo de la barra de botones */
 .summary {
   position: fixed; z-index: 35; left: 50%; transform: translateX(-50%);
-  top: calc(env(safe-area-inset-top, 0px) + 60px); bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+  top: calc(env(safe-area-inset-top, 0px) + 60px);
+  max-height: calc(100% - 146px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   width: min(560px, calc(100% - 20px)); box-sizing: border-box; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 14px;
-  padding: 16px; border-radius: 16px; background: var(--felt-deep);
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border-radius: 16px; background: var(--felt-deep);
 }
 .summary[hidden] { display: none; }
-.summary h2 { margin: 0; font-size: 26px; }
+.summary h2 { margin: 0; font-size: 22px; }
 .sum-end { margin: -6px 0 0; font-size: 17px; color: var(--chalk-dim); }
-.sum-lines { display: grid; gap: 6px; }
+.sum-lines { display: grid; gap: 4px; }
 .sr {
   display: grid; grid-template-columns: 4.4em minmax(0, 1fr) auto; align-items: center; gap: 2px 10px;
-  padding: 10px 12px; border-radius: 10px; background: var(--shade);
+  padding: 6px 10px; border-radius: 10px; background: var(--shade);
 }
 .sr-lance { font-weight: 700; font-size: 17px; }
 .who { justify-self: start; font-weight: 700; font-size: 15px; padding: 2px 10px; border-radius: 99px; color: var(--ink); }
@@ -256,15 +272,19 @@ body.no-ayuda .seat-0 .info { display: none; }
 .sr-pts.t0 { color: var(--us); }
 .sr-pts.t1 { color: var(--them); }
 .sr-pts.none { color: var(--chalk-dim); }
-.sr-detail { grid-column: 1 / -1; font-size: 15px; color: var(--chalk-dim); }
-.sum-hands { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.sh { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: var(--shade); min-width: 0; }
+.sr-detail {
+  grid-column: 1 / -1; font-size: 14px; color: var(--chalk-dim);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.sum-hands { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.sh { display: flex; flex-direction: column; gap: 4px; padding: 8px; border-radius: 10px; background: var(--shade); min-width: 0; }
+.sh-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
 .sh-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
 .sh-name.t0 { color: var(--us); }
 .sh-name.t1 { color: var(--them); }
 .sh-cards { display: flex; }
 .sh-cards .card { --w: 25%; width: 25%; box-shadow: -1px 0 2px rgba(0, 0, 0, 0.25); }
-.sh-info { font-size: 15px; color: var(--chalk-dim); }
+.sh-info { font-size: 14px; color: var(--chalk-dim); white-space: nowrap; }
 
 /* Órdago armado: pide un segundo toque */
 button.armed { background: var(--chalk); color: var(--ink); }
@@ -275,7 +295,10 @@ button.armed { background: var(--chalk); color: var(--ink); }
 
 /* Te toca: borde dorado en toda la pantalla */
 body.my-turn #app::after {
-  content: ''; position: fixed; inset: 0; z-index: 40; pointer-events: none;
+  content: ''; position: fixed; z-index: 40; pointer-events: none;
+  top: max(3px, env(safe-area-inset-top, 0px)); bottom: max(3px, env(safe-area-inset-bottom, 0px));
+  left: max(3px, env(safe-area-inset-left, 0px)); right: max(3px, env(safe-area-inset-right, 0px));
+  border-radius: 28px;
   border: 5px solid var(--gold);
   animation: turnin 0.4s ease-out;
 }
@@ -364,23 +387,30 @@ body.my-turn #app::after {
 @media (max-width: 600px), (max-height: 500px) {
   .log { display: none; }
 
-  /* Mesa simplificada: los bots son fichas con su nombre y lo último que han dicho */
+  /* Mesa simplificada: los bots son caras con nombre y un bocadillo con lo último que han dicho */
   .seat-1 .card.back, .seat-2 .card.back, .seat-3 .card.back { display: none; }
   .seat-1 .hand:not(:has(.card:not(.back))), .seat-2 .hand:not(:has(.card:not(.back))), .seat-3 .hand:not(:has(.card:not(.back))),
   .seat .info:empty { display: none; }
   .seat-1, .seat-2, .seat-3 {
-    align-self: stretch; justify-content: flex-start; min-width: 0;
-    padding: 6px 6px 8px; border-radius: 12px; background: var(--shade); border: 2px solid transparent;
+    position: relative; align-self: stretch; justify-content: flex-start; min-width: 0;
+    padding: 34px 4px 8px; border-radius: 18px;
   }
-  .seat.is-turn:not(.seat-0) { border-color: var(--chalk); }
-  .seat.is-turn:not(.seat-0) .name { border-color: transparent; background: none; }
-  .seat.is-mano:not(.seat-0) .hand { filter: none; }
+  .seat-1, .seat-3 { --av: 54px; }
+  .seat-2 { --av: 76px; background: rgba(242, 193, 78, 0.12); outline: 2px solid var(--us); outline-offset: -2px; }
+  .who { flex-direction: column; gap: 2px; }
+  .who-txt { align-items: center; }
+  .who .name { font-size: 15px; }
+  .seat-2 .who .name { font-size: 16px; }
   .seat-1 .bubble, .seat-2 .bubble, .seat-3 .bubble { display: none !important; }
   .said {
-    display: block; min-height: 1.25em; text-align: center;
-    font-size: 18px; font-weight: 700; line-height: 1.2; color: var(--chalk);
+    position: absolute; top: 4px; left: 50%; transform: translateX(-50%); z-index: 2;
+    display: block; max-width: calc(100% - 4px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    padding: 3px 10px; border-radius: 12px; background: var(--chalk); color: var(--ink);
+    font-size: 15px; font-weight: 700; line-height: 1.25;
   }
-  .said.pop { animation: pop 0.22s ease-out; }
+  .said:empty { display: none; }
+  .said.pop { animation: saypop 0.22s ease-out; }
+  @keyframes saypop { from { opacity: 0; transform: translateX(-50%) scale(0.8); } }
 
   /* El lance que se juega, en grande */
   .lances { display: none; }
@@ -411,7 +441,6 @@ body.my-turn #app::after {
   /* Señas en la ficha del compañero */
   .sena-line { display: block; text-align: center; font-size: 15px; font-weight: 700; color: var(--us); line-height: 1.2; }
   .sena-line:empty { display: none; }
-  .seat-2.has-sena { box-shadow: inset 0 0 0 2px var(--us); }
 
   .ayuda-btn .lbl { display: none; }
   .ayuda-btn { min-width: 44px; justify-content: center; font-size: 18px; padding: 0 10px; }
@@ -468,7 +497,6 @@ body.my-turn #app::after {
   .center { max-width: none; gap: 8px; }
   .ayuda-panel:not([hidden]) { top: calc(env(safe-area-inset-top, 0px) + 58px); left: 10px; right: 10px; max-height: 58vh; }
   .name { font-size: 14px; padding: 1px 6px; gap: 4px; }
-  .seat-1 .name, .seat-3 .name { flex-direction: column; }
   .mano { font-size: 10px; padding: 2px 6px; }
   .seat-1 .card + .card, .seat-2 .card + .card, .seat-3 .card + .card { margin-left: calc(var(--w) * -0.5); }
   .info { font-size: 11px; }
@@ -521,14 +549,25 @@ body.my-turn #app::after {
   .name { font-size: 13px; padding: 0 6px; gap: 5px; }
   .mano { font-size: 10px; padding: 1px 6px; }
   .info { font-size: 11px; min-height: 0; }
-  .seat-1 .bubble, .seat-2 .bubble, .seat-3 .bubble { top: auto; bottom: -4px; transform: translate(-50%, 100%); }
+  .seat-1, .seat-2, .seat-3 { padding: 4px 6px; flex-direction: column-reverse; gap: 2px; }
+  .seat-1, .seat-3 { --av: 40px; }
+  .seat-2 { --av: 48px; }
+  .who { flex-direction: row; gap: 8px; }
+  .who-txt { align-items: flex-start; }
+  .said { position: static; transform: none; align-self: center; font-size: 14px; padding: 2px 9px; }
+  .said.pop { animation: none; }
   .bubble { font-size: 14px; padding: 3px 9px; }
   .seat-0 { align-self: center; gap: 4px; }
-  .said { font-size: 16px; }
   .nl-name { font-size: 24px; }
   .nl-status { font-size: 18px; }
   .now-lance { padding: 8px 10px; gap: 4px; }
   .ayuda-btn { min-height: 32px; font-size: 14px; }
+  .summary {
+    top: 44px; max-height: calc(100% - 102px); width: min(820px, calc(100% - 24px));
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start; gap: 8px 12px;
+  }
+  .summary h2, .sum-end { grid-column: 1 / -1; }
+  body:has(#summary:not([hidden])) .table { visibility: hidden; }
   .ayuda-panel:not([hidden]) {
     top: 46px; bottom: 60px; left: max(12px, env(safe-area-inset-left, 0px)); width: min(36vw, 310px);
   }
@@ -575,15 +614,15 @@ body.my-turn #app::after {
   </header>
 
   <main class="table">
-    <section class="seat seat-2"><div class="name"></div><div class="said" aria-live="polite"></div><div class="sena-line" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
-    <section class="seat seat-3"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-2"><div class="said" aria-live="polite"></div><div class="who"><div class="avatar"></div><div class="who-txt"><div class="name"></div><div class="role">compañero</div><div class="sena-line" aria-live="polite"></div></div></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-3"><div class="said" aria-live="polite"></div><div class="who"><div class="avatar"></div><div class="who-txt"><div class="name"></div></div></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
     <section class="center">
       <div class="now-lance" id="now" aria-live="polite"></div>
       <div class="senas" id="senas" hidden></div>
       <ol class="lances" id="lances" aria-label="Lances"></ol>
       <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
     </section>
-    <section class="seat seat-1"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-1"><div class="said" aria-live="polite"></div><div class="who"><div class="avatar"></div><div class="who-txt"><div class="name"></div></div></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
     <section class="seat seat-0"><div class="me-row"><div class="name"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
   </main>
 

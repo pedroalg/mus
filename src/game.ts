@@ -1,12 +1,13 @@
 import { type Card, newDeck, shuffle } from './cards.ts';
 import * as R from './rules.ts';
+import type { Expr } from './avatars.ts';
 
 export type Lance = 'grande' | 'chica' | 'pares' | 'juego' | 'punto';
 export const LANCE_NAME: Record<Lance, string> = {
   grande: 'Grande', chica: 'Chica', pares: 'Pares', juego: 'Juego', punto: 'Punto',
 };
-// Asientos en orden de juego (hacia la derecha): 0 tú, 1 derecha, 2 compañero, 3 izquierda.
-export const SEAT_NAME = ['Tú', 'Derecha', 'Compañero', 'Izquierda'];
+// Asientos en orden de juego (hacia la derecha): 0 tú, 1 Paco (derecha), 2 Iñaki (compañero), 3 Maite (izquierda).
+export const SEAT_NAME = ['Tú', 'Paco', 'Iñaki', 'Maite'];
 export const TEAM_NAME = ['Nosotros', 'Ellos'];
 export const team = (seat: number) => seat % 2;
 
@@ -26,7 +27,7 @@ export interface Agent {
 }
 
 /** Una seña: el gesto que se ve en la mesa y lo que quiere decir. */
-export interface Sena { face: string; gesture: string; meaning: string }
+export interface Sena { face: string; gesture: string; meaning: string; expr: Expr }
 
 export interface Events {
   say(seat: number, text: string): Promise<void>;
@@ -53,7 +54,7 @@ export interface ScoreLine {
   pts: number;
   /** Cómo se resolvió: «En paso», «Envite de 2», «No quisieron»… */
   how: string;
-  /** Las jugadas que cuentan, por jugador: «Derecha: R R 7 4», «Tú: 31». */
+  /** Las jugadas que cuentan, por jugador: «Paco: R R 7 4», «Tú: 31». */
   plays: { seat: number; text: string }[];
 }
 
@@ -92,10 +93,15 @@ export class Game {
     this.target = target;
   }
 
-  private ask<T>(seat: number, f: (a: Agent) => Promise<T>): Promise<T> {
+  /** Da la palabra a un jugador y espera su respuesta; al contestar deja de estar «pensando». */
+  private async ask<T>(seat: number, f: (a: Agent) => Promise<T>): Promise<T> {
     this.turn = seat;
     this.ev.update();
-    return f(this.agents[seat]);
+    try {
+      return await f(this.agents[seat]);
+    } finally {
+      this.turn = null;
+    }
   }
 
   order(): number[] {

@@ -35,15 +35,15 @@ export function senasFor(h: Card[]): Sena[] {
   const ases = rs.filter(r => r === 1).length;
   const p = pares(h);
   const out: Sena[] = [];
-  if (total(h) === 31) out.push({ face: '😉', gesture: 'te guiña un ojo', meaning: 'tiene 31' });
-  if (p.kind === 3) out.push({ face: '🤨', gesture: 'levanta las cejas', meaning: 'tiene duples' });
-  if (p.kind === 2) out.push({ face: '😏', gesture: 'tuerce la boca', meaning: 'tiene medias' });
-  if (reyes === 3) out.push({ face: '😬', gesture: 'se muerde el labio de lado', meaning: 'tiene tres reyes' });
-  if (reyes === 2) out.push({ face: '😬', gesture: 'se muerde el labio', meaning: 'tiene dos reyes' });
-  if (ases === 3) out.push({ face: '😜', gesture: 'saca la lengua de lado', meaning: 'tiene tres ases' });
-  if (ases === 2) out.push({ face: '😛', gesture: 'saca la punta de la lengua', meaning: 'tiene dos ases' });
+  if (total(h) === 31) out.push({ face: '😉', gesture: 'te guiña un ojo', meaning: 'tiene 31', expr: 'wink' });
+  if (p.kind === 3) out.push({ face: '🤨', gesture: 'levanta las cejas', meaning: 'tiene duples', expr: 'brows' });
+  if (p.kind === 2) out.push({ face: '😏', gesture: 'tuerce la boca', meaning: 'tiene medias', expr: 'smirk' });
+  if (reyes === 3) out.push({ face: '😬', gesture: 'se muerde el labio de lado', meaning: 'tiene tres reyes', expr: 'biteSide' });
+  if (reyes === 2) out.push({ face: '😬', gesture: 'se muerde el labio', meaning: 'tiene dos reyes', expr: 'bite' });
+  if (ases === 3) out.push({ face: '😜', gesture: 'saca la lengua de lado', meaning: 'tiene tres ases', expr: 'tongueSide' });
+  if (ases === 2) out.push({ face: '😛', gesture: 'saca la punta de la lengua', meaning: 'tiene dos ases', expr: 'tongue' });
   if (out.length === 0 && p.kind === 0 && !hasJuego(h) && total(h) < 27) {
-    out.push({ face: '😑', gesture: 'cierra los ojos', meaning: 'va ciego, no tiene nada' });
+    out.push({ face: '😑', gesture: 'cierra los ojos', meaning: 'va ciego, no tiene nada', expr: 'closed' });
   }
   return out;
 }
