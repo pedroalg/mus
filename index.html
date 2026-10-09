@@ -1,0 +1,279 @@
+<title>Mus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Mesa de bar vista desde arriba: tapete verde con carril de madera, naipes crema.
+   Rejilla 3x3: compañero arriba, rivales a los lados, tu mano abajo y el marcador de lances en el centro.
+   Diseño de un solo tema a propósito: el tapete es el mismo de día y de noche. */
+:root {
+  --felt: #1d4a37;
+  --felt-hi: #2a6049;
+  --felt-deep: #12301f;
+  --rail: #4a2e1b;
+  --card: #f6efdf;
+  --card-edge: #d8cbae;
+  --ink: #221c15;
+  --ink-dim: #77684f;
+  --chalk: #efe7d2;
+  --chalk-dim: #a9bba9;
+  --line: rgba(239, 231, 210, 0.16);
+  --shade: rgba(0, 0, 0, 0.26);
+  --gold: #e0b23c;
+  --good: #94d48c;
+  --us: #f1cf68;
+  --them: #ef9373;
+
+  --display: "Alegreya SC", Georgia, serif;
+  --body: "Alegreya Sans", system-ui, sans-serif;
+  --cw: clamp(62px, min(10.5vw, 12vh), 118px);
+  --cw-side: clamp(38px, min(6vw, 7.5vh), 72px);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--felt-deep);
+  color: var(--chalk);
+  font-family: var(--body);
+  font-size: 16px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#app {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding-inline: 16px;
+  background: radial-gradient(ellipse at 50% 45%, var(--felt-hi), var(--felt) 55%, var(--felt-deep));
+  box-shadow: inset 0 0 0 7px var(--rail), inset 0 0 50px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Cabecera: marcador */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 14px 6px;
+  padding-inline: 8px;
+}
+.brand { font-family: var(--display); font-size: 26px; font-weight: 700; letter-spacing: 0.06em; }
+.score { display: flex; align-items: baseline; gap: 14px; font-variant-numeric: tabular-nums; }
+.score .team { display: flex; align-items: baseline; gap: 6px; }
+.score .team span { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--chalk-dim); }
+.score b { font-family: var(--display); font-size: 30px; line-height: 1; }
+.score .t0 b { color: var(--us); }
+.score .t1 b { color: var(--them); }
+.score .sep { font-size: 13px; color: var(--chalk-dim); }
+.phase { font-family: var(--display); font-size: 20px; min-width: 6em; text-align: right; line-height: 1.15; }
+.phase small { display: block; font-family: var(--body); font-size: 13px; color: var(--chalk-dim); }
+.phase small b { color: var(--gold); font-weight: 700; }
+
+/* Mesa */
+.table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: ". s2 ." "s3 center s1" ". s0 .";
+  gap: 10px 12px;
+  padding-block: 8px;
+  min-height: 0;
+}
+.seat { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.seat-0 { grid-area: s0; }
+.seat-1 { grid-area: s1; align-self: center; }
+.seat-2 { grid-area: s2; }
+.seat-3 { grid-area: s3; align-self: center; }
+.name {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-size: 17px; letter-spacing: 0.03em; white-space: nowrap;
+  padding: 2px 10px; border-radius: 99px; border: 2px solid transparent;
+}
+.seat-0 .name, .seat-2 .name { color: var(--us); }
+.seat-1 .name, .seat-3 .name { color: var(--them); }
+/* Ficha de mano: un disco dorado que no se puede pasar por alto */
+.mano {
+  font-family: var(--body); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--gold); color: var(--ink); border-radius: 99px; padding: 3px 9px;
+  box-shadow: 0 0 0 3px rgba(224, 178, 60, 0.3), 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.seat.is-mano .hand { filter: drop-shadow(0 0 10px rgba(224, 178, 60, 0.45)); }
+/* Quién habla ahora */
+.seat.is-turn .name { border-color: var(--chalk); background: var(--shade); }
+.seat.is-turn .name::after {
+  content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--chalk);
+  animation: blink 1s ease-in-out infinite;
+}
+@keyframes blink { 50% { opacity: 0.2; } }
+.info { font-size: 13px; color: var(--chalk-dim); min-height: 1.2em; font-variant-numeric: tabular-nums; }
+
+/* Chuleta de tus jugadas */
+.seat-0 .info {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+  width: 100%; max-width: 600px; color: var(--chalk);
+}
+.v {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: 6px 10px; border-radius: 8px; background: var(--shade); border: 1px solid var(--line);
+}
+.vl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--chalk-dim); }
+.vt { font-size: 15px; font-weight: 500; line-height: 1.25; }
+.g { font-style: normal; font-size: 12px; font-weight: 700; }
+.g3 { color: var(--good); }
+.g2 { color: var(--us); }
+.g1 { color: var(--them); }
+.g0 { color: var(--chalk-dim); }
+
+.hand { display: flex; gap: 6px; }
+.seat-1 .hand, .seat-2 .hand, .seat-3 .hand { --w: var(--cw-side); gap: 0; }
+.seat-1 .card + .card, .seat-2 .card + .card, .seat-3 .card + .card {
+  margin-left: calc(var(--w) * -0.38);
+  box-shadow: -3px 0 6px rgba(0, 0, 0, 0.4), 0 6px 14px rgba(0, 0, 0, 0.3);
+}
+
+.card {
+  --cardw: var(--w, var(--cw));
+  width: var(--cardw);
+  aspect-ratio: 330 / 521;
+  position: relative;
+  border-radius: calc(var(--cardw) * 0.07);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2), 0 6px 14px rgba(0, 0, 0, 0.3);
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.card img {
+  display: block; width: 100%; height: 100%;
+  border-radius: inherit;
+  -webkit-user-drag: none; pointer-events: none;
+}
+/* Etiqueta de equivalencia en treses y doses (8 reyes) */
+.card .alias {
+  position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
+  white-space: nowrap;
+  font-family: var(--body); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  font-size: max(9px, calc(var(--cardw) * 0.11));
+  padding: 2px 7px; border-radius: 99px;
+  background: var(--gold); color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.hand.picking .card { cursor: pointer; }
+.hand.picking .card:not(.sel):hover { transform: translateY(-4px); }
+.card.sel { transform: translateY(-16px); opacity: 0.55; outline: 2px dashed var(--chalk); outline-offset: 3px; }
+
+.bubble {
+  position: absolute; z-index: 5; left: 50%; top: -6px; transform: translate(-50%, -100%);
+  background: var(--chalk); color: var(--ink);
+  font-family: var(--display); font-weight: 700; font-size: 17px;
+  padding: 5px 12px; border-radius: 14px; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.seat-2 .bubble { top: auto; bottom: -6px; transform: translate(-50%, 100%); }
+.bubble.pop { animation: pop 0.22s ease-out; }
+@keyframes pop { from { scale: 0.7; opacity: 0; } to { scale: 1; opacity: 1; } }
+
+/* Señas del compañero: burbuja con el gesto y recuadro fijo durante la mano */
+.bubble.sena { background: var(--us); }
+.face { font-size: 1.25em; vertical-align: -0.12em; }
+.senas {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1px dashed var(--us); background: var(--shade);
+  font-size: 15px;
+}
+.senas .sl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--us); }
+.senas b { color: var(--us); }
+.log em { font-style: normal; color: var(--us); }
+
+/* Centro: lances, recuento e historial */
+.center {
+  grid-area: center;
+  display: flex; flex-direction: column; justify-content: center; gap: 12px;
+  width: 100%; max-width: 420px; justify-self: center; min-width: 0;
+}
+.lances { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lances li {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 7px 12px; border-radius: 8px;
+}
+.lances li.now { background: var(--shade); }
+.lances .ln { font-family: var(--display); font-size: 18px; }
+.lances li:not(.now) .ln { color: var(--chalk-dim); }
+.st { font-size: 14px; white-space: nowrap; }
+.st.muted { color: var(--chalk-dim); }
+.st.t0, .st.t1, .st.on { font-weight: 700; padding: 2px 9px; border-radius: 99px; color: var(--ink); }
+.st.t0 { background: var(--us); }
+.st.t1 { background: var(--them); }
+.st.on { background: var(--chalk); }
+
+.summary { background: var(--shade); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+.summary h2 { font-family: var(--display); font-size: 22px; margin: 0 0 6px; text-wrap: balance; }
+.summary ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
+
+.log {
+  list-style: none; margin: 0; padding: 0 12px; max-height: 6.6em; overflow: auto;
+  font-size: 13px; line-height: 1.5; color: var(--chalk-dim);
+  -webkit-mask-image: linear-gradient(#000 55%, transparent);
+  mask-image: linear-gradient(#000 55%, transparent);
+}
+.log b { color: var(--chalk); font-weight: 500; }
+
+/* Acciones */
+.actions {
+  min-height: 64px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
+  padding-block: 10px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.prompt { flex-basis: 100%; text-align: center; margin: 0; font-family: var(--display); font-size: 18px; }
+button {
+  font-family: var(--display); font-weight: 700; font-size: 19px;
+  min-height: 50px; padding: 0 22px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--shade); color: var(--chalk);
+  cursor: pointer; touch-action: manipulation;
+}
+button.primary { background: var(--us); color: var(--ink); border-color: transparent; }
+button.danger { background: var(--them); color: var(--ink); border-color: transparent; }
+button:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+
+@media (max-width: 560px) {
+  .seat-0 .info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .brand { display: none; }
+  .bar { padding-inline: 4px; }
+  .lances .ln { font-size: 15px; }
+  .lances li { padding: 5px 8px; }
+  button { font-size: 17px; padding: 0 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .bubble.pop { transition: none; animation: none; }
+}
+</style>
+
+<div id="app">
+  <header class="bar">
+    <div class="brand">Mus</div>
+    <div class="score" aria-label="Marcador">
+      <div class="team t0"><span>Nosotros</span><b id="s0">0</b></div>
+      <div class="sep" id="target">a 40</div>
+      <div class="team t1"><b id="s1">0</b><span>Ellos</span></div>
+    </div>
+    <div class="phase" id="phase"></div>
+  </header>
+
+  <main class="table">
+    <section class="seat seat-2"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-3"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="center">
+      <div class="senas" id="senas" hidden></div>
+      <ol class="lances" id="lances" aria-label="Lances"></ol>
+      <div class="summary" id="summary" hidden></div>
+      <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
+    </section>
+    <section class="seat seat-1"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-0"><div class="name"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+  </main>
+
+  <footer class="actions" id="actions" aria-live="polite"></footer>
+</div>
+
+<!--SCRIPT-->
