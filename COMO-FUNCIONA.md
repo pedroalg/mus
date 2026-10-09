@@ -334,8 +334,9 @@ Los diseños de cada tipo de pantalla están en bloques que empiezan por `@media
   quién es mano, de quién es el turno, lances, chuleta… Se llama cada vez que algo cambia.
 - **`say()`** y **`signal()`** muestran lo que dice cada jugador (burbujas y frases) y hacen
   la pausa de los bots.
-- **`choose()`** pinta los botones de una pregunta, enciende el aviso de «TE TOCA» y espera
-  a que pulses uno. **`pickDiscards()`** hace lo mismo para elegir descartes.
+- **`choose()`** pinta los botones de una pregunta, enciende el aviso de turno y espera
+  a que pulses uno. Cada botón lleva una columna fija (`slot`): 0 rechazar o pasar,
+  1 aceptar, 2 subir y 3 órdago, para que cada tipo de respuesta caiga siempre en el mismo sitio. **`pickDiscards()`** hace lo mismo para elegir descartes.
 - **`showSummary()`** enseña el recuento de la mano.
 - La clase **`Human`** traduce cada pregunta del árbitro en botones: «Mus / No hay mus»,
   «Paso / Envido / Envido 5 / Órdago», etc.

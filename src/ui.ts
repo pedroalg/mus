@@ -10,7 +10,7 @@ import { BOT_DELAY, type Settings } from './settings.ts';
 declare const __CARDS__: Record<string, string>;
 const NAME: Record<number, string> = { 1: 'as', 10: 'sota', 11: 'caballo', 12: 'rey' };
 // Con 8 reyes, los treses y los doses llevan una etiqueta con lo que valen.
-const ALIAS: Record<number, string> = { 3: 'vale rey', 2: 'vale as' };
+const ALIAS: Record<number, string> = { 3: '= rey', 2: '= as' };
 const SHORT: Record<number, string> = { 1: 'As', 4: '4', 5: '5', 6: '6', 7: '7', 10: 'S', 11: 'C', 12: 'R' };
 const PLURAL: Record<number, string> = {
   1: 'ases', 4: 'cuatros', 5: 'cincos', 6: 'seises', 7: 'sietes', 10: 'sotas', 11: 'caballos', 12: 'reyes',
@@ -94,20 +94,6 @@ function statusLong(r: LanceResult | undefined): string {
   }
 }
 
-function statusShort(r: LanceResult | undefined): string {
-  if (!r) return '—';
-  switch (r.state) {
-    case 'hablando': return '…';
-    case 'paso': return 'paso';
-    case 'nadie': return 'nadie';
-    case 'solo': return 'solo';
-    case 'envite': return `${r.amount}?`;
-    case 'querido': return String(r.amount);
-    case 'noquerido': return `+${r.amount}`;
-    case 'ordago': return 'órdago';
-  }
-}
-
 const PHASE_HINT: Record<string, string> = {
   Mus: '¿Hay mus?',
   Descartes: 'Cada uno cambia sus cartas',
@@ -115,7 +101,14 @@ const PHASE_HINT: Record<string, string> = {
 };
 const AYUDA_KEY = 'mus.ayudaOpen';
 
-interface Option<T> { label: string; value: T; kind?: 'primary' | 'danger' }
+/**
+ * Un botón de respuesta. `slot` fija su columna (0 a 3) para que cada tipo de respuesta
+ * caiga siempre en el mismo sitio: 0 rechazar o pasar, 1 aceptar, 2 subir, 3 órdago.
+ */
+interface Option<T> { label: string; value: T; kind?: 'primary' | 'danger'; slot?: number }
+
+/** La seña en pocas palabras para la ficha del compañero: «tiene dos reyes» → «dos reyes». */
+const senaShort = (meaning: string) => meaning.replace(/^tiene /, '').replace(/,.*$/, '');
 
 /** Se lanza dentro de una partida abandonada para que deje de jugar. */
 export class Abort extends Error {}
@@ -233,7 +226,6 @@ export class Ui implements Events {
     clearTimeout(this.timers[seat]);
     this.timers[seat] = window.setTimeout(() => { b.hidden = true; b.classList.remove('sena'); }, 2600);
     this.log(`<b>${SEAT_NAME[seat]}</b> ${sena.gesture} <em>(${sena.meaning})</em>`);
-    this.setSaid(seat, `<span class="face">${sena.face}</span> ${sena.meaning}`);
     this.update();
     await this.wait(Math.max(1400, this.botDelay * 1.8));
   }
@@ -307,6 +299,10 @@ export class Ui implements Events {
       else info.textContent = faceUp && g.hands[s].length ? describe(g.hands[s]) : '';
     }
 
+    const senaLine = $('.seat-2 .sena-line');
+    senaLine.innerHTML = g.senas.map(x => `<span class="face">${x.face}</span> ${senaShort(x.meaning)}`).join(' · ');
+    $('.seat-2').classList.toggle('has-sena', g.senas.length > 0);
+
     const ayuda = $('#ayuda-body');
     ayuda.innerHTML = g.hands[0].length ? valuesHtml(g.hands[0]) : '';
 
@@ -315,10 +311,9 @@ export class Ui implements Events {
     const curState = cur?.state === 'envite' || cur?.state === 'ordago' && cur.winner !== undefined ? ` t${cur.winner}` : '';
     $('#now').innerHTML = `<div class="nl-name">${g.current ? LANCE_NAME[g.current] : g.phase}</div>`
       + `<div class="nl-status${curState}">${g.current ? statusLong(cur) : PHASE_HINT[g.phase] ?? ''}</div>`
-      + '<div class="nl-pills">' + (['grande', 'chica', 'pares', last] as Lance[]).map(l => {
-        const r = g.results.find(x => x.lance === l);
-        const t = r && (r.state === 'noquerido' || r.state === 'solo' || r.state === 'envite') ? ` t${r.winner}` : '';
-        return `<span class="pill${g.current === l ? ' now' : ''}${t}">${LANCE_NAME[l]} <b>${statusShort(r)}</b></span>`;
+      + '<div class="nl-dots" aria-hidden="true">' + (['grande', 'chica', 'pares', last] as Lance[]).map(l => {
+        const done = g.results.some(x => x.lance === l) && g.current !== l;
+        return `<span class="dot${g.current === l ? ' now' : done ? ' done' : ''}"></span>`;
       }).join('') + '</div>';
 
     $('#lances').innerHTML = (['grande', 'chica', 'pares', last] as Lance[])
@@ -352,6 +347,10 @@ export class Ui implements Events {
       this.myTurn(turn);
       const bar = $('#actions');
       bar.innerHTML = prompt ? `<p class="prompt">${turn ? '<span class="tetoca">Te toca</span>' : ''}${prompt}</p>` : '';
+      const slotted = opts.some(o => o.slot !== undefined);
+      const row = document.createElement('div');
+      row.className = slotted ? 'slots' : 'btns';
+      const cells: HTMLElement[] = slotted ? [0, 1, 2, 3].map(() => row.appendChild(document.createElement('span'))) : [];
       for (const o of opts) {
         const b = document.createElement('button');
         b.textContent = o.label;
@@ -362,8 +361,14 @@ export class Ui implements Events {
           bar.innerHTML = '';
           resolve(o.value);
         };
-        bar.append(b);
+        if (slotted) {
+          cells[o.slot ?? 0].replaceWith(b);
+          cells[o.slot ?? 0] = b;
+        } else {
+          row.append(b);
+        }
       }
+      bar.append(row);
     });
   }
 
@@ -377,7 +382,10 @@ export class Ui implements Events {
       const bar = $('#actions');
       const draw = () => {
         const n = this.selected.size;
-        bar.innerHTML = '<p class="prompt"><span class="tetoca">Te toca</span>Toca las cartas que quieres cambiar</p>';
+        bar.innerHTML = '<p class="prompt keep"><span class="tetoca">Te toca</span>Toca las cartas que quieres cambiar</p>';
+        const row = document.createElement('div');
+        row.className = 'slots';
+        row.innerHTML = '<span></span><span></span><span></span><span></span>';
         const b = document.createElement('button');
         b.className = 'primary';
         b.textContent = n ? `Descartar ${n}` : 'Descartar';
@@ -393,7 +401,8 @@ export class Ui implements Events {
           this.update();
           resolve(idx);
         };
-        bar.append(b);
+        row.children[1].replaceWith(b);
+        bar.append(row);
       };
       this.onSelect = draw;
       draw();
@@ -421,8 +430,8 @@ export class Human implements Agent {
 
   mus() {
     return this.ui.choose('¿Pides mus?', [
-      { label: 'Mus', value: true, kind: 'primary' },
-      { label: 'No hay mus', value: false },
+      { label: 'No hay mus', value: false, slot: 0 },
+      { label: 'Mus', value: true, kind: 'primary', slot: 1 },
     ]);
   }
 
@@ -432,22 +441,22 @@ export class Human implements Agent {
 
   bet({ lance }: BetCtx) {
     return this.ui.choose<Bet>(`${LANCE_NAME[lance]}: te toca hablar`, [
-      { label: 'Paso', value: { kind: 'paso' } },
-      { label: 'Envido', value: { kind: 'envido', amount: 2 }, kind: 'primary' },
-      { label: 'Envido 5', value: { kind: 'envido', amount: 5 } },
-      { label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger' },
+      { label: 'Paso', value: { kind: 'paso' }, slot: 0 },
+      { label: 'Envido', value: { kind: 'envido', amount: 2 }, kind: 'primary', slot: 1 },
+      { label: 'Envido 5', value: { kind: 'envido', amount: 5 }, slot: 2 },
+      { label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3 },
     ]);
   }
 
   reply({ lance, amount, ordago }: ReplyCtx) {
     const name = LANCE_NAME[lance].toLowerCase();
     const opts: Option<Reply>[] = [
-      { label: 'Quiero', value: { kind: 'quiero' }, kind: 'primary' },
-      { label: 'No quiero', value: { kind: 'noquiero' } },
+      { label: 'No quiero', value: { kind: 'noquiero' }, slot: 0 },
+      { label: 'Quiero', value: { kind: 'quiero' }, kind: 'primary', slot: 1 },
     ];
     if (!ordago) {
-      opts.push({ label: '2 más', value: { kind: 'envido', amount: 2 } });
-      opts.push({ label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger' });
+      opts.push({ label: '+2', value: { kind: 'envido', amount: 2 }, slot: 2 });
+      opts.push({ label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3 });
     }
     return this.ui.choose(ordago ? `¡Órdago a ${name}!` : `Os envidan ${amount} a ${name}`, opts);
   }

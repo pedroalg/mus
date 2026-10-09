@@ -41,7 +41,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 #app {
-  min-height: 100%;
+  height: 100%;
   box-sizing: border-box;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -190,11 +190,12 @@ body {
   grid-area: center;
   display: flex; flex-direction: column; justify-content: center; gap: 12px;
   width: 100%; max-width: 420px; justify-self: center; min-width: 0;
+  min-height: 0; overflow: hidden;
 }
 .lances { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .lances li {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  padding: 7px 12px; border-radius: 8px;
+  padding: 5px 12px; border-radius: 8px;
 }
 .lances li.now { background: var(--shade); }
 .lances .ln { font-family: var(--display); font-size: 18px; }
@@ -211,7 +212,7 @@ body {
 .summary ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
 
 .log {
-  list-style: none; margin: 0; padding: 0 12px; max-height: 6.6em; overflow: auto;
+  list-style: none; margin: 0; padding: 0 12px; max-height: 6.6em; min-height: 0; flex: 0 1 auto; overflow: auto;
   font-size: 13px; line-height: 1.5; color: var(--chalk-dim);
   -webkit-mask-image: linear-gradient(#000 55%, transparent);
   mask-image: linear-gradient(#000 55%, transparent);
@@ -221,16 +222,20 @@ body {
 /* Acciones */
 .actions {
   min-height: 64px;
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px;
+  display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 16px;
   padding-block: 10px calc(18px + env(safe-area-inset-bottom, 0px));
 }
-.prompt { flex-basis: 100%; text-align: center; margin: 0; font-family: var(--display); font-size: 18px; }
+.prompt { flex: 0 1 auto; text-align: right; margin: 0; font-family: var(--display); font-size: 18px; }
 button {
   font-family: var(--display); font-weight: 700; font-size: 19px;
   min-height: 50px; padding: 0 22px; border-radius: 12px;
   border: 1px solid var(--line); background: var(--shade); color: var(--chalk);
   cursor: pointer; touch-action: manipulation;
 }
+/* Botones de respuesta en columnas fijas: rechazar, aceptar, subir, órdago */
+.slots { flex: 1 1 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; max-width: 640px; }
+.slots button { width: 100%; padding: 0 8px; }
+.btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 button.primary { background: var(--us); color: var(--ink); border-color: transparent; }
 button.danger { background: var(--them); color: var(--ink); border-color: transparent; }
 button:disabled { opacity: 0.4; cursor: default; }
@@ -249,7 +254,7 @@ button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 body.no-ayuda .seat-0 .info { display: none; }
 
 /* Piezas que solo se ven en el móvil */
-.said, .now-lance, .ayuda-btn, .ayuda-panel { display: none; }
+.said, .sena-line, .now-lance, .ayuda-btn, .ayuda-panel { display: none; }
 .me-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
 
 /* Te toca: borde dorado en toda la pantalla */
@@ -378,12 +383,31 @@ body.my-turn #app::after {
   .nl-status { font-size: 21px; font-weight: 700; min-height: 1.2em; }
   .nl-status.t0 { color: var(--us); }
   .nl-status.t1 { color: var(--them); }
-  .nl-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
-  .pill { font-size: 13px; padding: 2px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--chalk-dim); }
-  .pill b { color: var(--chalk); font-weight: 700; }
-  .pill.now { border-color: var(--chalk); color: var(--chalk); }
-  .pill.t0 b { color: var(--us); }
-  .pill.t1 b { color: var(--them); }
+  .nl-dots { display: flex; gap: 10px; justify-content: center; margin-top: 2px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--chalk-dim); box-sizing: border-box; }
+  .dot.done { background: var(--chalk-dim); }
+  .dot.now { background: var(--chalk); border-color: var(--chalk); transform: scale(1.25); }
+
+  /* Una sola fuente para cada dato: sin fase en la cabecera, sin frase sobre los botones, sin recuadro de señas */
+  .phase, .senas, .prompt:not(.keep) { display: none; }
+  .bar::after { content: ''; width: 36px; }
+  .score { gap: 12px; }
+  .score .team { flex-direction: column; align-items: center; gap: 0; }
+  .score .t0 { flex-direction: column-reverse; }
+  .bar .score b { font-size: 32px; }
+  .bar .score .team span { font-size: 10px; letter-spacing: 0.08em; }
+  .bar .score .sep { font-size: 0; }
+  .bar .score .sep::after { content: '·'; font-size: 24px; color: var(--chalk-dim); }
+
+  /* Señas en la ficha del compañero */
+  .sena-line { display: block; text-align: center; font-size: 15px; font-weight: 700; color: var(--us); line-height: 1.2; }
+  .sena-line:empty { display: none; }
+  .seat-2.has-sena { box-shadow: inset 0 0 0 2px var(--us); }
+
+  .ayuda-btn .lbl { display: none; }
+  .ayuda-btn { min-width: 44px; justify-content: center; font-size: 18px; padding: 0 10px; }
+  .slots { gap: 6px; }
+  .actions .slots button { font-size: 15px; padding: 0 4px; white-space: nowrap; }
 
   /* Chuleta plegable */
   .seat-0 .info { display: none; }
@@ -459,7 +483,9 @@ body.my-turn #app::after {
   .vt { font-size: 13px; }
   .g { font-size: 11px; }
   .actions { gap: 8px; padding-block: 6px calc(10px + env(safe-area-inset-bottom, 0px)); }
-  .prompt { font-size: 16px; }
+  .actions { flex-wrap: wrap; }
+  .prompt { font-size: 16px; flex-basis: 100%; text-align: center; }
+  .slots { flex-basis: 100%; }
   button { font-size: 16px; padding: 0 14px; min-height: 46px; }
   .fan { width: 200px; height: 160px; }
   .fan .card { --w: 86px; margin-left: -43px; }
@@ -544,7 +570,7 @@ body.my-turn #app::after {
   </header>
 
   <main class="table">
-    <section class="seat seat-2"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-2"><div class="name"></div><div class="said" aria-live="polite"></div><div class="sena-line" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
     <section class="seat seat-3"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
     <section class="center">
       <div class="now-lance" id="now" aria-live="polite"></div>
@@ -554,7 +580,7 @@ body.my-turn #app::after {
       <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
     </section>
     <section class="seat seat-1"><div class="name"></div><div class="said" aria-live="polite"></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
-    <section class="seat seat-0"><div class="me-row"><div class="name"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false">💡 Mis jugadas</button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-0"><div class="me-row"><div class="name"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
   </main>
 
   <aside class="ayuda-panel" id="ayuda" aria-label="Tus jugadas" hidden>
