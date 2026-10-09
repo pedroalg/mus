@@ -278,7 +278,8 @@ respuesta; `Human` enseña botones y espera a que pulses uno.
 ### Avisos a la mesa (`Events`)
 
 El árbitro también avisa a la pantalla de lo que pasa: `say` (alguien habla), `signal`
-(una seña), `newHand` (mano nueva) y `update` (repinta la mesa). La pantalla no decide nada:
+(una seña), `newHand` (mano nueva), `lanceDone` (un lance ha terminado: la pantalla enseña
+el resultado un par de segundos antes de seguir) y `update` (repinta la mesa). La pantalla no decide nada:
 solo enseña lo que el árbitro le cuenta.
 
 ---

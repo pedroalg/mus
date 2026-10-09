@@ -40,6 +40,12 @@ export const saveSettings = (s: Settings) => write(SETTINGS_KEY, s);
 
 export const loadStats = () => read<Stats>(STATS_KEY, { won: 0, lost: 0 });
 
+export function resetStats(): Stats {
+  const s = { won: 0, lost: 0 };
+  write(STATS_KEY, s);
+  return s;
+}
+
 export function recordResult(won: boolean): Stats {
   const s = loadStats();
   if (won) s.won++; else s.lost++;

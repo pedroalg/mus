@@ -1,5 +1,5 @@
 import type { Game } from './game.ts';
-import { loadSettings, loadStats, saveSettings, type Settings, type Stats } from './settings.ts';
+import { loadSettings, loadStats, resetStats, saveSettings, type Settings, type Stats } from './settings.ts';
 import type { Ui } from './ui.ts';
 import { cardSvg } from './cardArt.ts';
 
@@ -37,6 +37,23 @@ export class Menu {
     $('#go-again').onclick = () => this.gameOverChoice?.(true);
     $('#go-menu').onclick = () => this.gameOverChoice?.(false);
 
+    // Borrar el marcador pide un segundo toque
+    const reset = $('#reset-stats') as HTMLButtonElement;
+    reset.onclick = () => {
+      if (!reset.classList.contains('armed')) {
+        reset.classList.add('armed');
+        reset.textContent = '¿Seguro? Toca otra vez';
+        setTimeout(() => {
+          reset.classList.remove('armed');
+          reset.textContent = 'Borrar marcador de partidas';
+        }, 3000);
+        return;
+      }
+      resetStats();
+      reset.classList.remove('armed');
+      reset.textContent = 'Marcador borrado';
+    };
+
     const form = $('#settings-form') as HTMLFormElement;
     this.fillSettings(form, loadSettings());
     form.onchange = () => {
@@ -48,6 +65,7 @@ export class Menu {
 
   private open(id: string) {
     for (const s of SCREENS) $(s).hidden = s !== id;
+    if (id === '#settings') $('#reset-stats').textContent = 'Borrar marcador de partidas';
     $(id).scrollTop = 0;
   }
 
@@ -75,7 +93,8 @@ export class Menu {
     const won = game.winner === 0;
     $('#go-title').textContent = won ? '¡Victoria!' : 'Derrota';
     $('#go-title').className = won ? 'won' : 'lost';
-    $('#go-sub').textContent = won ? 'Tu compañero y tú os lleváis la partida' : 'Esta vez se la llevan ellos';
+    // El motivo explica marcadores raros, como perder 6–2 por un órdago
+    $('#go-sub').textContent = game.endReason || (won ? 'Iñaki y tú os lleváis la partida' : 'Esta vez se la llevan ellos');
     $('#go-us').textContent = String(game.scores[0]);
     $('#go-them').textContent = String(game.scores[1]);
     $('#go-record').innerHTML = recordText(stats);

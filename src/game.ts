@@ -34,6 +34,8 @@ export interface Events {
   signal?(seat: number, sena: Sena): Promise<void>;
   /** Se acaban de repartir las cartas de una mano nueva. */
   newHand?(): void;
+  /** Un lance acaba de resolverse: momento para enseñar el resultado antes de seguir. */
+  lanceDone?(res: LanceResult): Promise<void>;
   update(): void;
 }
 
@@ -75,6 +77,8 @@ export class Game {
   phase = '';
   reveal = false;
   winner: number | null = null;
+  /** Por qué terminó la partida, contado desde tu lado: «Os ganaron el órdago a grande». */
+  endReason = '';
   /** Señas que te ha hecho tu compañero en esta mano. */
   senas: Sena[] = [];
   /** Asiento al que le toca hablar ahora mismo. */
@@ -219,17 +223,20 @@ export class Game {
       res.winner = team(players[0]);
     } else {
       this.ev.update();
+      let envidado = false;
       for (const s of players) {
         const b = await this.ask(s, a => a.bet(this.ctx(s, lance)));
         await this.ev.say(s, betText(b));
         if (b.kind !== 'paso') {
           await this.envite(res, team(s), b);
-          return;
+          envidado = true;
+          break;
         }
       }
-      res.state = 'paso';
+      if (!envidado) res.state = 'paso';
     }
     this.ev.update();
+    await this.ev.lanceDone?.(res);
   }
 
   /** Quien responde por un equipo: tú si te toca hablar, si no el primero de la pareja. */
@@ -271,7 +278,8 @@ export class Game {
     if (ordago) {
       this.reveal = true;
       const w = team(this.lanceWinner(res.lance, res.players));
-      this.endGame(w, `Órdago a ${LANCE_NAME[res.lance].toLowerCase()} querido: gana ${TEAM_NAME[w].toLowerCase()}.`);
+      const lanceName = LANCE_NAME[res.lance].toLowerCase();
+      this.endGame(w, w === 0 ? `Ganasteis el órdago a ${lanceName}.` : `Os ganaron el órdago a ${lanceName}.`);
     }
   }
 
@@ -285,11 +293,12 @@ export class Game {
   private award(t: number, pts: number) {
     this.scores[t] += pts;
     this.ev.update();
-    if (this.scores[t] >= this.target) this.endGame(t, `${TEAM_NAME[t]} llegan a ${this.target}.`);
+    if (this.scores[t] >= this.target) this.endGame(t, t === 0 ? `Llegasteis a ${this.target}.` : `Llegaron a ${this.target}.`);
   }
 
   private endGame(t: number, msg: string): never {
     this.winner = t;
+    this.endReason = msg;
     throw new GameOver(msg);
   }
 
@@ -331,7 +340,7 @@ export class Game {
         line.how = w === 0 ? 'No quisieron' : 'No quisisteis';
         line.pts += res.amount;
       } else if (res.state === 'solo') {
-        line.how = 'Sin envite: solo una pareja';
+        line.how = `Solo ${w === 0 ? 'vosotros teníais' : 'ellos tenían'} ${res.lance}`;
       }
       if (res.lance === 'pares' || res.lance === 'juego') {
         for (const s of res.players) {
@@ -359,5 +368,5 @@ export function replyText(r: Reply): string {
   if (r.kind === 'quiero') return 'Quiero';
   if (r.kind === 'noquiero') return 'No quiero';
   if (r.kind === 'ordago') return '¡Órdago!';
-  return `${r.amount} más`;
+  return `+${r.amount}`;
 }

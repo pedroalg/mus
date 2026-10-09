@@ -64,7 +64,7 @@ function statusHtml(r: LanceResult | undefined): string {
   switch (r.state) {
     case 'hablando': return '<span class="st muted">hablando…</span>';
     case 'paso': return '<span class="st muted">en paso</span>';
-    case 'nadie': return '<span class="st muted">nadie tiene</span>';
+    case 'nadie': return '<span class="st muted">nadie</span>';
     case 'solo': return chip(r.winner!, `solo ${TEAM_NAME[r.winner!].toLowerCase()}`);
     case 'envite': return chip(r.winner!, `${r.amount} envidado`);
     case 'querido': return '<span class="st on">' + `${r.amount} querido</span>`;
@@ -73,17 +73,20 @@ function statusHtml(r: LanceResult | undefined): string {
   }
 }
 
-/** Estado del lance en una frase, para el panel grande del móvil. */
-function statusLong(r: LanceResult | undefined): string {
+/** Estado del lance en una frase, para el panel grande del centro. */
+function statusLong(r: LanceResult | undefined, turn: number | null): string {
   if (!r) return 'Declarando…';
+  const lance = LANCE_NAME[r.lance].toLowerCase();
   switch (r.state) {
-    case 'hablando': return 'Hablando…';
+    case 'hablando':
+      if (turn === 0) return 'Te toca hablar';
+      return turn === null ? 'Hablando…' : `${SEAT_NAME[turn]} piensa…`;
     case 'paso': return 'En paso';
-    case 'nadie': return 'Nadie tiene';
-    case 'solo': return r.winner === 0 ? 'Solo vosotros: no se apuesta' : 'Solo ellos: no se apuesta';
+    case 'nadie': return `Nadie tiene ${lance}`;
+    case 'solo': return r.winner === 0 ? `Solo vosotros tenéis ${lance}` : `Solo ellos tienen ${lance}`;
     case 'envite': return r.winner === 0 ? `Envidáis ${r.amount}` : `Os envidan ${r.amount}`;
     case 'querido': return `${r.amount} querido`;
-    case 'noquerido': return `No quiero: +${r.amount} ${TEAM_NAME[r.winner!].toLowerCase()}`;
+    case 'noquerido': return r.winner === 0 ? `No quisieron: +${r.amount} vosotros` : `No quisisteis: +${r.amount} ellos`;
     case 'ordago':
       if (r.winner === undefined) return 'Órdago querido';
       return r.winner === 0 ? 'Echáis órdago' : '¡Os echan órdago!';
@@ -130,6 +133,8 @@ export class Ui implements Events {
   private saidText = ['', '', '', ''];
   /** Gesto del compañero: pone la cara de la seña unos segundos y vuelve a la normal. */
   private partnerExpr: Expr = 'neutral';
+  /** Lance o fase en curso: al cambiar, se vacían los bocadillos del anterior. */
+  private stage = '';
   private exprTimer = 0;
 
   constructor() {
@@ -180,6 +185,7 @@ export class Ui implements Events {
     this.selecting = false;
     this.selected.clear();
     this.onSelect = null;
+    this.stage = '';
     this.unpause();
     document.body.classList.remove('my-turn');
     this.newHand();
@@ -240,6 +246,12 @@ export class Ui implements Events {
     await this.wait(Math.max(1400, this.botDelay * 1.8));
   }
 
+  /** Deja ver cómo ha acabado el lance (en paso, querido, no quiero…) antes de pasar al siguiente. */
+  async lanceDone(_res: LanceResult) {
+    this.update();
+    await this.wait(this.botDelay * 2 + 300);
+  }
+
   async say(seat: number, text: string) {
     $(`.seat-${seat} .bubble`).classList.remove('sena');
     const b = $(`.seat-${seat} .bubble`);
@@ -270,6 +282,11 @@ export class Ui implements Events {
 
   update() {
     const g = this.game;
+    const stage = `${g.phase}|${g.current}`;
+    if (stage !== this.stage) {
+      this.stage = stage;
+      this.saidText = ['', '', '', ''];
+    }
     const senas = $('#senas');
     senas.hidden = g.senas.length === 0;
     senas.innerHTML = '<span class="sl">Señas de tu compañero</span>' + g.senas
@@ -326,9 +343,9 @@ export class Ui implements Events {
 
     const last: Lance = g.results.some(r => r.lance === 'punto') ? 'punto' : 'juego';
     const cur = g.current ? g.results.find(x => x.lance === g.current) : undefined;
-    const curState = cur?.state === 'envite' || cur?.state === 'ordago' && cur.winner !== undefined ? ` t${cur.winner}` : '';
+    const curState = cur && cur.winner !== undefined && ['envite', 'ordago', 'noquerido', 'solo'].includes(cur.state) ? ` t${cur.winner}` : '';
     $('#now').innerHTML = `<div class="nl-name">${g.current ? LANCE_NAME[g.current] : g.phase}</div>`
-      + `<div class="nl-status${curState}">${g.current ? statusLong(cur) : PHASE_HINT[g.phase] ?? ''}</div>`
+      + `<div class="nl-status${curState}">${g.current ? statusLong(cur, g.turn) : PHASE_HINT[g.phase] ?? ''}</div>`
       + '<div class="nl-dots" aria-hidden="true">' + (['grande', 'chica', 'pares', last] as Lance[]).map(l => {
         const done = g.results.some(x => x.lance === l) && g.current !== l;
         return `<span class="dot${g.current === l ? ' now' : done ? ' done' : ''}"></span>`;

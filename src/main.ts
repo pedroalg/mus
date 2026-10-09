@@ -20,6 +20,7 @@ async function startGame() {
     say: async (s, t) => { ui.check(gen); await ui.say(s, t); ui.check(gen); },
     signal: async (s, x) => { ui.check(gen); await ui.signal(s, x); ui.check(gen); },
     newHand: () => { if (gen === ui.gen) ui.newHand(); },
+    lanceDone: async r => { ui.check(gen); await ui.lanceDone(r); ui.check(gen); },
     update: () => { if (gen === ui.gen) ui.update(); },
   };
   const game = new Game([new Human(ui), new Bot(), partner, new Bot()], ev, settings.target);
