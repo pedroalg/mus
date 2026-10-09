@@ -26,7 +26,7 @@
 
   --display: "Alegreya SC", Georgia, serif;
   --body: "Alegreya Sans", system-ui, sans-serif;
-  --cw: clamp(62px, min(10.5vw, 12vh), 118px);
+  --cw: clamp(62px, min(10.5vw, 11vh), 118px);
   --cw-side: clamp(38px, min(6vw, 7.5vh), 72px);
   color-scheme: dark;
 }
@@ -236,22 +236,212 @@ button.danger { background: var(--them); color: var(--ink); border-color: transp
 button:disabled { opacity: 0.4; cursor: default; }
 button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 
-@media (max-width: 560px) {
-  .seat-0 .info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .brand { display: none; }
-  .bar { padding-inline: 4px; }
-  .lances .ln { font-size: 15px; }
-  .lances li { padding: 5px 8px; }
-  button { font-size: 17px; padding: 0 16px; }
+/* Cabecera: botón de menú */
+.brand { display: flex; align-items: center; gap: 10px; }
+.menu-btn { min-height: 40px; padding: 0 12px; font-size: 18px; line-height: 1; }
+
+/* Reparto y marcador */
+.card[data-deal] { animation: deal 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes deal { from { transform: translateY(-48px) scale(0.8) rotate(-8deg); opacity: 0; } }
+.score b { display: inline-block; }
+.score b.bump { animation: bump 0.55s ease-out; }
+@keyframes bump { 30% { transform: scale(1.4); } }
+body.no-ayuda .seat-0 .info { display: none; }
+
+/* Pantallas: menú, reglas, ajustes y final */
+.screen {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; overflow-y: auto;
+  padding: max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+           max(20px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: radial-gradient(ellipse at 50% 30%, var(--felt-hi), var(--felt) 50%, var(--felt-deep));
+  box-shadow: inset 0 0 0 7px var(--rail), inset 0 0 60px 20px rgba(0, 0, 0, 0.45);
 }
+.menu-inner { display: flex; flex-direction: column; align-items: center; gap: 28px; }
+.menu-hero { display: flex; flex-direction: column; align-items: center; }
+.menu-side { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.fan { position: relative; width: 240px; height: 190px; }
+.fan .card {
+  --w: 104px;
+  position: absolute; left: 50%; bottom: 0; margin-left: -52px;
+  transform-origin: 50% 115%; transform: rotate(var(--r));
+  animation: fanin 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: var(--d);
+}
+@keyframes fanin { from { transform: rotate(0deg) translateY(40px); opacity: 0; } }
+.title {
+  margin: 10px 0 0; font-family: var(--display); font-weight: 700;
+  font-size: clamp(68px, 18vw, 120px); line-height: 0.9; letter-spacing: 0.1em; padding-left: 0.1em;
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+}
+.tagline { margin: 8px 0 0; font-family: var(--display); font-size: 16px; color: var(--chalk-dim); text-align: center; }
+.menu-btns { display: flex; flex-direction: column; gap: 10px; width: min(280px, 100%); }
+.menu-btns button { width: 100%; }
+.record { margin: 0; font-size: 14px; color: var(--chalk-dim); text-align: center; }
+.record b { color: var(--chalk); font-variant-numeric: tabular-nums; }
+
+.sheet { place-items: start center; }
+.sheet-inner { width: 100%; max-width: 640px; }
+.sheet-head {
+  position: sticky; top: calc(-1 * max(20px, env(safe-area-inset-top, 0px))); z-index: 1;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-block: 12px; background: var(--felt);
+  border-bottom: 1px solid var(--line);
+}
+.sheet-head h2 { margin: 0; font-family: var(--display); font-size: 28px; }
+.sheet-head .back { min-height: 42px; font-size: 16px; }
+.prose { font-size: 16px; line-height: 1.55; padding-bottom: 24px; }
+.prose h3 { font-family: var(--display); font-size: 21px; color: var(--us); margin: 22px 0 4px; }
+.prose p, .prose ul { margin: 0 0 10px; }
+.prose ul { padding-left: 20px; }
+.prose i { color: var(--us); font-style: normal; }
+.lances-def { margin: 0 0 10px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+.lances-def dt { font-family: var(--display); font-weight: 700; }
+.lances-def dd { margin: 0; }
+.senas-table { border-collapse: collapse; width: 100%; }
+.senas-table td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.senas-table td:last-child { color: var(--us); font-weight: 700; text-align: right; }
+
+.settings { display: grid; gap: 22px; padding-block: 18px 24px; }
+.settings fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.settings legend { font-family: var(--display); font-size: 19px; padding: 0; margin-bottom: 8px; }
+.hint { margin: 0; font-size: 14px; color: var(--chalk-dim); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--shade); }
+.seg label { flex: 1; position: relative; }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: block; padding: 13px 8px; text-align: center; font-family: var(--display); font-weight: 700; font-size: 17px; }
+.seg input:checked + span { background: var(--us); color: var(--ink); }
+.seg input:focus-visible + span { outline: 3px solid var(--chalk); outline-offset: -3px; }
+
+.go-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.kicker { margin: 0; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--chalk-dim); }
+#go-title { margin: 0; font-family: var(--display); font-size: clamp(56px, 14vw, 96px); line-height: 1; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); }
+#go-title.won { color: var(--us); }
+#go-title.lost { color: var(--them); }
+.go-sub { margin: 0; font-size: 17px; }
+.go-score { margin: 10px 0; display: flex; align-items: baseline; gap: 16px; font-family: var(--display); font-size: 54px; font-variant-numeric: tabular-nums; }
+.go-score .us { color: var(--us); }
+.go-score .them { color: var(--them); }
+.go-score .dash { color: var(--chalk-dim); font-size: 36px; }
+.go-inner .menu-btns { margin-top: 12px; }
+
+/* El recuento ocupa el sitio de los lances en pantallas pequeñas */
+@media (max-width: 600px), (max-height: 500px) {
+  .center:has(#summary:not([hidden])) .lances,
+  .center:has(#summary:not([hidden])) .senas { display: none; }
+  .log { display: none; }
+  .summary { padding: 8px 12px; }
+  .summary h2 { font-size: 18px; }
+  .summary ul { font-size: 13px; padding-left: 16px; }
+}
+
+/* iPhone en vertical */
+@media (max-width: 600px) {
+  :root { --cw: min(22vw, 92px); --cw-side: 34px; }
+  #app { padding-inline: 10px; }
+  .bar { padding-block: 10px 2px; padding-inline: 2px; gap: 8px; }
+  .brand span { display: none; }
+  .menu-btn { min-height: 36px; padding: 0 10px; }
+  .score { gap: 8px; }
+  .score b { font-size: 26px; }
+  .score .team span { font-size: 11px; letter-spacing: 0.04em; }
+  .score .sep { font-size: 11px; }
+  .phase { font-size: 16px; min-width: 0; }
+  .phase small { font-size: 11px; }
+  .table { grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr); gap: 6px 6px; padding-block: 4px; }
+  .name { font-size: 14px; padding: 1px 6px; gap: 4px; }
+  .seat-1 .name, .seat-3 .name { flex-direction: column; }
+  .mano { font-size: 10px; padding: 2px 6px; }
+  .seat-1 .card + .card, .seat-2 .card + .card, .seat-3 .card + .card { margin-left: calc(var(--w) * -0.5); }
+  .info { font-size: 11px; }
+  .bubble { font-size: 14px; padding: 4px 9px; }
+  .seat-1 .bubble { left: auto; right: 0; transform: translate(0, -100%); }
+  .seat-3 .bubble { left: 0; transform: translate(0, -100%); }
+  .center { gap: 6px; }
+  .lances li { padding: 4px 8px; }
+  .lances .ln { font-size: 14px; }
+  .st { font-size: 12px; }
+  .st.t0, .st.t1, .st.on { padding: 1px 7px; }
+  .senas { font-size: 13px; padding: 6px 8px; }
+  .hand { gap: 5px; }
+  .seat-0 .info { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .v { padding: 4px 8px; flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+  .vl { font-size: 10px; flex-basis: 100%; }
+  .vt { font-size: 13px; }
+  .g { font-size: 11px; }
+  .actions { gap: 8px; padding-block: 6px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .prompt { font-size: 16px; }
+  button { font-size: 16px; padding: 0 14px; min-height: 46px; }
+  .fan { width: 200px; height: 160px; }
+  .fan .card { --w: 86px; margin-left: -43px; }
+}
+
+/* iPhone en horizontal: rivales y compañero en una fila arriba, tu mano y tu chuleta debajo */
+@media (max-height: 500px) and (orientation: landscape) {
+  :root { --cw: min(20vh, 9vw, 84px); --cw-side: min(9vh, 40px); }
+  #app {
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+  .bar { padding-block: 8px 0; }
+  .brand span { display: none; }
+  .menu-btn { min-height: 34px; padding: 0 10px; font-size: 16px; }
+  .score b { font-size: 22px; }
+  .score .team span, .score .sep { font-size: 11px; }
+  .phase { font-size: 15px; min-width: 0; }
+  .phase small { display: inline; margin-left: 8px; font-size: 12px; }
+  .table {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "s3 s2 s1" "center s0 s0";
+    gap: 4px 14px; padding-block: 2px;
+  }
+  .seat-1, .seat-3 { align-self: start; }
+  .seat { gap: 3px; }
+  .name { font-size: 13px; padding: 0 6px; gap: 5px; }
+  .mano { font-size: 10px; padding: 1px 6px; }
+  .info { font-size: 11px; min-height: 0; }
+  .seat-1 .bubble, .seat-2 .bubble, .seat-3 .bubble { top: auto; bottom: -4px; transform: translate(-50%, 100%); }
+  .bubble { font-size: 14px; padding: 3px 9px; }
+  .seat-0 {
+    display: grid; grid-template-columns: auto minmax(0, 290px); grid-template-areas: "name ." "hand info";
+    justify-content: center; align-items: center; align-self: center; gap: 2px 14px;
+  }
+  .seat-0 .name { grid-area: name; justify-self: center; }
+  .seat-0 .hand { grid-area: hand; }
+  .seat-0 .info { grid-area: info; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .v { padding: 3px 8px; }
+  .vl { font-size: 10px; }
+  .vt { font-size: 13px; }
+  .g { font-size: 11px; }
+  .card.sel { transform: translateY(-10px); }
+  .center { justify-content: flex-start; gap: 4px; max-width: none; }
+  .lances li { padding: 2px 8px; }
+  .lances .ln { font-size: 14px; }
+  .st { font-size: 12px; }
+  .senas { font-size: 12px; padding: 4px 8px; gap: 2px; }
+  .actions { min-height: 0; flex-wrap: nowrap; gap: 8px; padding-block: 4px calc(6px + env(safe-area-inset-bottom, 0px)); }
+  .prompt { flex-basis: auto; font-size: 15px; margin-right: 6px; white-space: nowrap; }
+  button { min-height: 40px; font-size: 15px; padding: 0 14px; }
+
+  .menu-inner { flex-direction: row; gap: 48px; }
+  .fan { width: 180px; height: 140px; }
+  .fan .card { --w: 76px; margin-left: -38px; }
+  .title { font-size: 64px; }
+  .screen { place-items: center; }
+  .sheet { place-items: start center; }
+  .go-score { font-size: 40px; margin: 4px 0; }
+  #go-title { font-size: 52px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .card, .bubble.pop { transition: none; animation: none; }
+  .card, .bubble.pop, .card[data-deal], .fan .card, .score b.bump { transition: none; animation: none; }
 }
 </style>
 
 <div id="app">
   <header class="bar">
-    <div class="brand">Mus</div>
+    <div class="brand"><button class="menu-btn" id="open-menu" aria-label="Menú">☰</button><span>Mus</span></div>
     <div class="score" aria-label="Marcador">
       <div class="team t0"><span>Nosotros</span><b id="s0">0</b></div>
       <div class="sep" id="target">a 40</div>
@@ -275,5 +465,126 @@ button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
 
   <footer class="actions" id="actions" aria-live="polite"></footer>
 </div>
+
+<section class="screen" id="menu" hidden>
+  <div class="menu-inner">
+    <div class="menu-hero">
+      <div class="fan" id="fan" aria-hidden="true"></div>
+      <h1 class="title">Mus</h1>
+      <p class="tagline">con la baraja de Heraclio Fournier de 1878</p>
+    </div>
+    <div class="menu-side">
+      <nav class="menu-btns">
+        <button id="m-continue" class="primary" hidden>Continuar partida</button>
+        <button id="m-new" class="primary">Nueva partida</button>
+        <button id="m-rules">Cómo se juega</button>
+        <button id="m-settings">Ajustes</button>
+      </nav>
+      <p class="record" id="record"></p>
+    </div>
+  </div>
+</section>
+
+<section class="screen sheet" id="rules" hidden>
+  <div class="sheet-inner">
+    <header class="sheet-head"><h2>Cómo se juega</h2><button class="back">Volver</button></header>
+    <div class="prose">
+      <h3>La partida</h3>
+      <p>Jugáis dos parejas: tú y tu compañero, sentado enfrente, contra los dos de los lados. Gana la primera pareja que llega a 40 puntos (puedes cambiarlo a 30 en Ajustes).</p>
+
+      <h3>Las cartas</h3>
+      <p>Baraja española de 40 cartas. Se juega con <b>8 reyes</b>: los treses valen como reyes y los doses como ases. Las figuras (sota, caballo y rey) valen 10 para el juego; el resto, lo que marcan.</p>
+
+      <h3>Mus y descartes</h3>
+      <p>Cada uno recibe 4 cartas. Empezando por la <b>mano</b> (el jugador que habla primero), cada uno dice <i>mus</i> si quiere cambiar cartas o <i>no hay mus</i> para jugar con las que tiene. Si todos piden mus, cada uno se descarta de las que quiera y se repite. En cuanto uno corta, empiezan los lances.</p>
+
+      <h3>Los cuatro lances</h3>
+      <dl class="lances-def">
+        <dt>Grande</dt><dd>Gana quien tiene las cartas más altas. Se compara la mejor de cada uno, luego la segunda, y así.</dd>
+        <dt>Chica</dt><dd>Al revés: gana quien tiene las cartas más bajas.</dd>
+        <dt>Pares</dt><dd>Solo juegan quienes tienen pares. <i>Pareja</i> (dos iguales, 1 punto) &lt; <i>medias</i> (tres iguales, 2) &lt; <i>duples</i> (dos parejas o cuatro iguales, 3).</dd>
+        <dt>Juego</dt><dd>Se tiene juego sumando 31 o más. El orden es 31 (la mejor, 3 puntos), 32, 40, 37, 36, 35, 34 y 33 (2 puntos cada uno).</dd>
+        <dt>Punto</dt><dd>Si nadie tiene juego, se juega al punto: gana quien más se acerque a 30.</dd>
+      </dl>
+      <p>En los empates gana el que esté más cerca de la mano.</p>
+
+      <h3>Envites</h3>
+      <p>En cada lance puedes <i>pasar</i> o <i>envidar</i> (apostar 2 o más). La otra pareja responde:</p>
+      <ul>
+        <li><b>Quiero</b>: se acepta y lo gana quien tenga mejores cartas al final.</li>
+        <li><b>No quiero</b>: quien envidó se lleva 1 punto, o lo que ya estuviera aceptado antes de subir.</li>
+        <li><b>Subir</b>: se acepta y se envida más encima.</li>
+        <li><b>Órdago</b>: se apuesta la partida entera. Si se quiere, se enseñan las cartas y quien gana el lance gana la partida.</li>
+      </ul>
+      <p>Si todos pasan en grande, chica o punto, el lance vale 1 punto para quien lo gane. Los pares y el juego siempre suman sus puntos.</p>
+
+      <h3>Señas</h3>
+      <p>Tu compañero te hará señas de vez en cuando para contarte qué lleva:</p>
+      <table class="senas-table">
+        <tr><td>😉 Guiña un ojo</td><td>31</td></tr>
+        <tr><td>🤨 Levanta las cejas</td><td>Duples</td></tr>
+        <tr><td>😏 Tuerce la boca</td><td>Medias</td></tr>
+        <tr><td>😬 Se muerde el labio</td><td>Dos reyes</td></tr>
+        <tr><td>😬 Se muerde el labio de lado</td><td>Tres reyes</td></tr>
+        <tr><td>😛 Saca la punta de la lengua</td><td>Dos ases</td></tr>
+        <tr><td>😜 Saca la lengua de lado</td><td>Tres ases</td></tr>
+        <tr><td>😑 Cierra los ojos</td><td>Ciego, no tiene nada</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="screen sheet" id="settings" hidden>
+  <div class="sheet-inner">
+    <header class="sheet-head"><h2>Ajustes</h2><button class="back">Volver</button></header>
+    <form id="settings-form" class="settings" onsubmit="return false">
+      <fieldset>
+        <legend>Partida a</legend>
+        <div class="seg">
+          <label><input type="radio" name="target" value="30" id="t30"><span>30 puntos</span></label>
+          <label><input type="radio" name="target" value="40" id="t40"><span>40 puntos</span></label>
+        </div>
+        <p class="hint">Se aplica a la próxima partida.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Velocidad de los bots</legend>
+        <div class="seg">
+          <label><input type="radio" name="speed" value="lenta" id="sp-l"><span>Lenta</span></label>
+          <label><input type="radio" name="speed" value="normal" id="sp-n"><span>Normal</span></label>
+          <label><input type="radio" name="speed" value="rapida" id="sp-r"><span>Rápida</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Señas del compañero</legend>
+        <div class="seg">
+          <label><input type="radio" name="senas" value="si" id="se-s"><span>Sí</span></label>
+          <label><input type="radio" name="senas" value="no" id="se-n"><span>No</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Ayuda con tus jugadas</legend>
+        <div class="seg">
+          <label><input type="radio" name="ayuda" value="si" id="ay-s"><span>Sí</span></label>
+          <label><input type="radio" name="ayuda" value="no" id="ay-n"><span>No</span></label>
+        </div>
+        <p class="hint">Muestra debajo de tus cartas lo que llevas en cada lance.</p>
+      </fieldset>
+    </form>
+  </div>
+</section>
+
+<section class="screen" id="gameover" hidden>
+  <div class="go-inner">
+    <p class="kicker">Fin de la partida</p>
+    <h1 id="go-title"></h1>
+    <p class="go-sub" id="go-sub"></p>
+    <p class="go-score"><span class="us" id="go-us"></span><span class="dash">–</span><span class="them" id="go-them"></span></p>
+    <p class="record" id="go-record"></p>
+    <nav class="menu-btns">
+      <button id="go-again" class="primary">Revancha</button>
+      <button id="go-menu">Menú</button>
+    </nav>
+  </div>
+</section>
 
 <!--SCRIPT-->

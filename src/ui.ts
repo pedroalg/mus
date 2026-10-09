@@ -4,6 +4,7 @@ import { LANCE_NAME, SEAT_NAME, TEAM_NAME } from './game.ts';
 import { rank } from './cards.ts';
 import { pares, total, hasJuego, juegoValue, PARES_NAME } from './rules.ts';
 import { strength } from './bots.ts';
+import { BOT_DELAY, type Settings } from './settings.ts';
 
 // Baraja Heraclio Fournier de 1878 (dominio público, Wikimedia Commons), incrustada al compilar.
 declare const __CARDS__: Record<string, string>;
@@ -18,15 +19,15 @@ const PLURAL: Record<number, string> = {
 const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-function cardHtml(c: Card, i: number, sel: boolean): string {
+function cardHtml(c: Card, i: number, sel: boolean, deal = ''): string {
   const alias = ALIAS[c.n];
-  return `<div class="card${sel ? ' sel' : ''}" data-i="${i}">`
+  return `<div class="card${sel ? ' sel' : ''}"${deal} data-i="${i}">`
     + `<img src="${__CARDS__[`${c.suit}-${c.n}`]}" alt="${NAME[c.n] ?? c.n} de ${c.suit}" draggable="false">`
     + (alias ? `<span class="alias">${alias}</span>` : '')
     + '</div>';
 }
 
-const BACK = () => `<div class="card back"><img src="${__CARDS__.back}" alt="" draggable="false"></div>`;
+const BACK = (deal = '') => `<div class="card back"${deal}><img src="${__CARDS__.back}" alt="" draggable="false"></div>`;
 
 function describe(h: Card[]): string {
   const p = pares(h);
@@ -78,12 +79,26 @@ function statusHtml(r: LanceResult | undefined): string {
 
 interface Option<T> { label: string; value: T; kind?: 'primary' | 'danger' }
 
+/** Se lanza dentro de una partida abandonada para que deje de jugar. */
+export class Abort extends Error {}
+
+const DEAL_MS = 380;
+
 export class Ui implements Events {
   game!: Game;
   private selecting = false;
   private selected = new Set<number>();
   private onSelect: (() => void) | null = null;
   private timers: number[] = [];
+  /** Partida actual: al empezar otra, la anterior se corta. */
+  gen = 0;
+  private rejectPending: ((e: Error) => void) | null = null;
+  private paused: Promise<void> | null = null;
+  private resume: (() => void) | null = null;
+  private botDelay = BOT_DELAY.normal;
+  /** Momento en que empieza a repartirse cada carta, para animarla una sola vez. */
+  private dealtAt = new Map<string, number>();
+  private shownScores = [0, 0];
 
   constructor() {
     $('.seat-0 .hand').addEventListener('click', e => {
@@ -94,6 +109,51 @@ export class Ui implements Events {
       this.update();
       this.onSelect?.();
     });
+  }
+
+  /** Empieza una partida nueva y corta la anterior si seguía en marcha. */
+  newSession(game: Game): number {
+    this.gen++;
+    this.rejectPending?.(new Abort());
+    this.rejectPending = null;
+    this.selecting = false;
+    this.selected.clear();
+    this.onSelect = null;
+    this.unpause();
+    this.game = game;
+    this.dealtAt.clear();
+    this.shownScores = [0, 0];
+    $('#actions').innerHTML = '';
+    $('#summary').hidden = true;
+    $('#log').hidden = false;
+    this.clearLog();
+    for (const b of document.querySelectorAll<HTMLElement>('.bubble')) b.hidden = true;
+    this.update();
+    return this.gen;
+  }
+
+  check(gen: number) {
+    if (gen !== this.gen) throw new Abort();
+  }
+
+  pause() {
+    if (!this.paused) this.paused = new Promise(r => { this.resume = r; });
+  }
+
+  unpause() {
+    this.resume?.();
+    this.paused = null;
+    this.resume = null;
+  }
+
+  applySettings(s: Settings) {
+    this.botDelay = BOT_DELAY[s.speed];
+    document.body.classList.toggle('no-ayuda', !s.ayuda);
+  }
+
+  private async wait(ms: number) {
+    await sleep(ms);
+    while (this.paused) await this.paused;
   }
 
   async signal(seat: number, sena: Sena) {
@@ -108,7 +168,7 @@ export class Ui implements Events {
     this.timers[seat] = window.setTimeout(() => { b.hidden = true; b.classList.remove('sena'); }, 2600);
     this.log(`<b>${SEAT_NAME[seat]}</b> ${sena.gesture} <em>(${sena.meaning})</em>`);
     this.update();
-    await sleep(1400);
+    await this.wait(Math.max(1400, this.botDelay * 1.8));
   }
 
   async say(seat: number, text: string) {
@@ -123,7 +183,7 @@ export class Ui implements Events {
     this.timers[seat] = window.setTimeout(() => { b.hidden = true; }, 2200);
     this.log(`<b>${SEAT_NAME[seat]}</b> ${text}`);
     this.update();
-    await sleep(seat === 0 ? 300 : 750);
+    await this.wait(seat === 0 ? 300 : this.botDelay);
   }
 
   log(html: string) {
@@ -145,8 +205,17 @@ export class Ui implements Events {
     senas.innerHTML = '<span class="sl">Señas de tu compañero</span>' + g.senas
       .map(x => `<span class="sx"><span class="face">${x.face}</span> ${x.gesture}: <b>${x.meaning}</b></span>`)
       .join('');
-    $('#s0').textContent = String(g.scores[0]);
-    $('#s1').textContent = String(g.scores[1]);
+    for (const t of [0, 1]) {
+      const el = $(`#s${t}`);
+      el.textContent = String(g.scores[t]);
+      if (g.scores[t] !== this.shownScores[t]) {
+        el.classList.remove('bump');
+        void el.offsetWidth;
+        el.classList.add('bump');
+        this.shownScores[t] = g.scores[t];
+      }
+    }
+    const now = performance.now();
     $('#target').textContent = `a ${g.target}`;
     $('#phase').innerHTML = `${g.phase}<small>Mano: <b>${SEAT_NAME[g.mano]}</b></small>`;
 
@@ -160,7 +229,10 @@ export class Ui implements Events {
       const hand = el.querySelector('.hand') as HTMLElement;
       hand.classList.toggle('picking', s === 0 && this.selecting);
       hand.innerHTML = g.hands[s]
-        .map((c, i) => (faceUp ? cardHtml(c, i, s === 0 && this.selected.has(i)) : BACK()))
+        .map((c, i) => {
+          const deal = this.dealAttr(`${c.suit}-${c.n}`, now, s, i);
+          return faceUp ? cardHtml(c, i, s === 0 && this.selected.has(i), deal) : BACK(deal);
+        })
         .join('');
       const info = el.querySelector('.info')!;
       if (s === 0) info.innerHTML = g.hands[0].length ? valuesHtml(g.hands[0]) : '';
@@ -177,8 +249,20 @@ export class Ui implements Events {
       .join('');
   }
 
+  /** Las cartas nuevas entran repartidas; si se repinta a mitad, la animación sigue donde iba. */
+  private dealAttr(key: string, now: number, seat: number, i: number): string {
+    let start = this.dealtAt.get(key);
+    if (start === undefined) {
+      start = now + (i * 4 + seat) * 45;
+      this.dealtAt.set(key, start);
+    }
+    if (now - start >= DEAL_MS) return '';
+    return ` style="animation-delay:${Math.round(start - now)}ms" data-deal`;
+  }
+
   choose<T>(prompt: string, opts: Option<T>[]): Promise<T> {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
+      this.rejectPending = reject;
       const bar = $('#actions');
       bar.innerHTML = prompt ? `<p class="prompt">${prompt}</p>` : '';
       for (const o of opts) {
@@ -186,6 +270,7 @@ export class Ui implements Events {
         b.textContent = o.label;
         if (o.kind) b.className = o.kind;
         b.onclick = () => {
+          this.rejectPending = null;
           bar.innerHTML = '';
           resolve(o.value);
         };
@@ -198,7 +283,8 @@ export class Ui implements Events {
     this.selecting = true;
     this.selected.clear();
     this.update();
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
+      this.rejectPending = reject;
       const bar = $('#actions');
       const draw = () => {
         const n = this.selected.size;
@@ -209,6 +295,7 @@ export class Ui implements Events {
         b.disabled = n === 0;
         b.onclick = () => {
           const idx = [...this.selected];
+          this.rejectPending = null;
           this.selecting = false;
           this.selected.clear();
           this.onSelect = null;
@@ -229,7 +316,7 @@ export class Ui implements Events {
     el.innerHTML = `<h2>${title}</h2><ul>${(lines.length ? lines : ['Nada que contar']).map(l => `<li>${l}</li>`).join('')}</ul>`;
     el.hidden = false;
     $('#log').hidden = true;
-    await this.choose('', [{ label: winner === null ? 'Siguiente mano' : 'Nueva partida', value: 0, kind: 'primary' }]);
+    await this.choose('', [{ label: winner === null ? 'Siguiente mano' : 'Ver resultado', value: 0, kind: 'primary' }]);
     el.hidden = true;
     $('#log').hidden = false;
   }

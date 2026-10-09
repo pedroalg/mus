@@ -49,8 +49,11 @@ export function senasFor(h: Card[]): Sena[] {
 }
 
 export class Bot implements Agent {
+  senasOn = true;
+
   /** De vez en cuando: la seña más importante y, a veces, una segunda. */
   senas(h: Card[]): Sena[] {
+    if (!this.senasOn) return [];
     const all = senasFor(h);
     if (all.length === 0 || Math.random() < 0.35) return [];
     return all.slice(0, Math.random() < 0.4 ? 2 : 1);

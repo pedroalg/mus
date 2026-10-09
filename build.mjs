@@ -48,7 +48,7 @@ body { margin: 0; -webkit-touch-callout: none; }
 </head>
 <body>
 ${page}
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});</script>
 </body>
 </html>
 `;
