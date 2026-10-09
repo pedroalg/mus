@@ -152,7 +152,9 @@ body {
   font-family: var(--display); font-weight: 700; font-size: 17px;
   padding: 5px 12px; border-radius: 14px; white-space: nowrap;
 }
-.seat-1 .bubble, .seat-2 .bubble, .seat-3 .bubble { display: none !important; }
+/* Todos hablan con bocadillos fijos; las burbujas que flotaban ya no se usan */
+.seat .bubble { display: none !important; }
+.me-row .said { max-width: 45%; }
 .bubble.pop { animation: pop 0.22s ease-out; }
 @keyframes pop { from { scale: 0.7; opacity: 0; } to { scale: 1; opacity: 1; } }
 
@@ -428,11 +430,11 @@ body.my-turn #app::after {
   .who { flex-direction: column; gap: 2px; }
   .who-txt { align-items: center; }
   .who .name { font-size: 16px; }
-  .said {
+  .seat-1 .said, .seat-2 .said, .seat-3 .said {
     position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 2;
     max-width: calc(100% - 4px); font-size: 16px; padding: 3px 10px;
   }
-  .said.pop { animation: saypop 0.22s ease-out; }
+  .seat-1 .said.pop, .seat-2 .said.pop, .seat-3 .said.pop { animation: saypop 0.22s ease-out; }
   @keyframes saypop { from { opacity: 0; transform: translateX(-50%) scale(0.8); } }
   .sena-line { text-align: center; }
   .nl-name { font-size: 32px; }
@@ -541,8 +543,8 @@ body.my-turn #app::after {
   .seat-2 { --av: 50px; }
   .who { flex-direction: row; gap: 8px; }
   .who-txt { align-items: flex-start; }
-  .said { position: static; transform: none; align-self: center; font-size: 14px; padding: 2px 9px; }
-  .said.pop { animation: none; }
+  .said, .seat-1 .said, .seat-2 .said, .seat-3 .said { position: static; transform: none; align-self: center; font-size: 14px; padding: 2px 9px; }
+  .seat-1 .said.pop, .seat-2 .said.pop, .seat-3 .said.pop { animation: none; }
   .bubble { font-size: 14px; padding: 3px 9px; }
   .seat-0 .bubble { left: auto; right: 0; top: 0; transform: none; }
   .seat-0 { align-self: center; gap: 4px; }
@@ -611,7 +613,7 @@ body.my-turn #app::after {
       <ol class="log" id="log" aria-label="Lo que se ha dicho"></ol>
     </section>
     <section class="seat seat-1"><div class="said" aria-live="polite"></div><div class="who"><div class="avatar"></div><div class="who-txt"><div class="name"></div></div></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
-    <section class="seat seat-0"><div class="me-row"><div class="name"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
+    <section class="seat seat-0"><div class="me-row"><div class="name"></div><div class="said" aria-live="polite"></div><button class="ayuda-btn" id="ayuda-btn" aria-controls="ayuda" aria-expanded="false" aria-label="Mis jugadas"><span aria-hidden="true">💡</span><span class="lbl">Mis jugadas</span></button></div><div class="hand"></div><div class="info"></div><div class="bubble" hidden></div></section>
   </main>
 
   <section class="summary" id="summary" aria-live="polite" hidden></section>

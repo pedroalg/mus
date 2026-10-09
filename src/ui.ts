@@ -313,6 +313,7 @@ export class Ui implements Events {
       if (s === 0) {
         el.querySelector('.name')!.innerHTML = (s === g.mano ? '<span class="mano" title="Es mano: habla primero y gana los empates">Mano</span>' : '')
           + `<span>${SEAT_NAME[s]}</span>`;
+        el.querySelector('.said')!.innerHTML = this.saidText[0];
       } else {
         // Bots: cara con aro de su pareja (claro si le toca) y la ficha de mano encima, sin mover el nombre
         const ring = s === g.turn ? 'turn' : team(s) === 0 ? 'us' : 'them';
