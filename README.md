@@ -23,5 +23,4 @@ npm run build   # genera docs/ (GitHub Pages) y dist/mus.html
 
 ## Créditos
 
-Cartas: baraja de Heraclio Fournier de 1878, dominio público, vía
-[Wikimedia Commons](https://commons.wikimedia.org/wiki/Category:Heraclio_Fournier%E2%80%99s_1878_card_deck).
+Cartas: baraja propia, dibujada en SVG en `src/cardArt.ts`.

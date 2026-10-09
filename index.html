@@ -136,27 +136,13 @@ body {
 .card {
   --cardw: var(--w, var(--cw));
   width: var(--cardw);
-  aspect-ratio: 330 / 521;
+  aspect-ratio: 200 / 316;
   position: relative;
-  border-radius: calc(var(--cardw) * 0.07);
+  border-radius: calc(var(--cardw) * 0.08);
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2), 0 6px 14px rgba(0, 0, 0, 0.3);
   transition: transform 0.18s ease, opacity 0.18s ease;
 }
-.card img {
-  display: block; width: 100%; height: 100%;
-  border-radius: inherit;
-  -webkit-user-drag: none; pointer-events: none;
-}
-/* Etiqueta de equivalencia en treses y doses (8 reyes) */
-.card .alias {
-  position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
-  white-space: nowrap;
-  font-family: var(--body); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
-  font-size: max(9px, calc(var(--cardw) * 0.11));
-  padding: 2px 7px; border-radius: 99px;
-  background: var(--gold); color: var(--ink);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-}
+.card svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 .hand.picking .card { cursor: pointer; }
 .hand.picking .card:not(.sel):hover { transform: translateY(-4px); }
 .card.sel { transform: translateY(-16px); opacity: 0.55; outline: 2px dashed var(--chalk); outline-offset: 3px; }
@@ -596,7 +582,7 @@ body.my-turn #app::after {
     <div class="menu-hero">
       <div class="fan" id="fan" aria-hidden="true"></div>
       <h1 class="title">Mus</h1>
-      <p class="tagline">con la baraja de Heraclio Fournier de 1878</p>
+      <p class="tagline">a cuatro, con 8 reyes</p>
     </div>
     <div class="menu-side">
       <nav class="menu-btns">

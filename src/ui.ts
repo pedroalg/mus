@@ -5,12 +5,9 @@ import { rank } from './cards.ts';
 import { pares, total, hasJuego, juegoValue, PARES_NAME } from './rules.ts';
 import { strength } from './bots.ts';
 import { BOT_DELAY, type Settings } from './settings.ts';
+import { backSvg, cardSvg } from './cardArt.ts';
 
-// Baraja Heraclio Fournier de 1878 (dominio público, Wikimedia Commons), incrustada al compilar.
-declare const __CARDS__: Record<string, string>;
 const NAME: Record<number, string> = { 1: 'as', 10: 'sota', 11: 'caballo', 12: 'rey' };
-// Con 8 reyes, los treses y los doses llevan una etiqueta con lo que valen.
-const ALIAS: Record<number, string> = { 3: '= rey', 2: '= as' };
 const SHORT: Record<number, string> = { 1: 'As', 4: '4', 5: '5', 6: '6', 7: '7', 10: 'S', 11: 'C', 12: 'R' };
 const PLURAL: Record<number, string> = {
   1: 'ases', 4: 'cuatros', 5: 'cincos', 6: 'seises', 7: 'sietes', 10: 'sotas', 11: 'caballos', 12: 'reyes',
@@ -20,14 +17,13 @@ const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 function cardHtml(c: Card, i: number, sel: boolean, deal = ''): string {
-  const alias = ALIAS[c.n];
-  return `<div class="card${sel ? ' sel' : ''}"${deal} data-i="${i}">`
-    + `<img src="${__CARDS__[`${c.suit}-${c.n}`]}" alt="${NAME[c.n] ?? c.n} de ${c.suit}" draggable="false">`
-    + (alias ? `<span class="alias">${alias}</span>` : '')
+  return `<div class="card${sel ? ' sel' : ''}"${deal} data-i="${i}" role="img" aria-label="${NAME[c.n] ?? c.n} de ${c.suit}">`
+    + cardSvg(c)
     + '</div>';
 }
 
-const BACK = (deal = '') => `<div class="card back"${deal}><img src="${__CARDS__.back}" alt="" draggable="false"></div>`;
+const BACK_SVG = backSvg();
+const BACK = (deal = '') => `<div class="card back"${deal}>${BACK_SVG}</div>`;
 
 function describe(h: Card[]): string {
   const p = pares(h);

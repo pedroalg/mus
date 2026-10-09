@@ -41,6 +41,7 @@ jugar a cuatro bots entre ellos (lo hace un test con 200 partidas).
 mus/
 ├── src/                  El código del juego (TypeScript)
 │   ├── cards.ts          La baraja: palos, números, barajar, valor de cada carta
+│   ├── cardArt.ts        El dibujo de las cartas (pintas, figuras y reverso)
 │   ├── rules.ts          Comparar manos: grande, chica, pares, juego y punto
 │   ├── game.ts           El árbitro: desarrollo de una mano completa
 │   ├── bots.ts           Cómo deciden los bots y qué señas hace tu compañero
@@ -50,14 +51,13 @@ mus/
 │   └── main.ts           El arranque: conecta todo y empieza las partidas
 ├── index.html            La estructura de la página y TODOS los estilos (colores, tamaños)
 ├── test/                 Pruebas automáticas de las reglas
-├── assets/cards/         Las 40 cartas y el reverso (imágenes .webp)
 ├── pwa/                  Lo que hace falta para instalarlo como app (icono, modo sin conexión)
 ├── build.mjs             El script que lo empaqueta todo
 ├── docs/                 El resultado empaquetado que publica GitHub Pages (no se edita a mano)
 └── dist/mus.html         El mismo juego en un solo archivo, para Claude (no se edita a mano)
 ```
 
-**Regla de oro:** se edita `src/`, `index.html`, `assets/` y `pwa/`. Las carpetas `docs/` y
+**Regla de oro:** se edita `src/`, `index.html` y `pwa/`. Las carpetas `docs/` y
 `dist/` se regeneran solas con `npm run build`.
 
 ---
@@ -341,6 +341,13 @@ Los diseños de cada tipo de pantalla están en bloques que empiezan por `@media
 - La clase **`Human`** traduce cada pregunta del árbitro en botones: «Mus / No hay mus»,
   «Paso / Envido / Envido 5 / Órdago», etc.
 
+### `cardArt.ts`: el dibujo de las cartas
+
+Las cartas no son imágenes guardadas: se dibujan al vuelo en SVG, un formato de dibujo con
+formas geométricas que se ve nítido a cualquier tamaño. `cardSvg(carta)` devuelve el dibujo
+de una carta (número en la esquina, pintas o figura, y la marca dorada del 3 y del 2) y
+`backSvg()` el reverso. La receta de la sección 11 explica cómo cambiarlas.
+
 ### Pausar y abandonar partidas
 
 Al abrir el menú se llama a `pause()` y los bots se quedan esperando hasta `unpause()`.
@@ -367,9 +374,9 @@ no es el suyo, se detiene con un aviso `Abort`. Así nunca hay dos partidas a la
 
 1. Traduce todo `src/` de TypeScript a JavaScript y lo junta en un único bloque (con la
    herramienta **esbuild**).
-2. Convierte las 41 imágenes de `assets/cards/` en texto (base64) y las mete dentro de la
-   página, en una variable llamada `__CARDS__`. Por eso el juego es un único archivo que
-   funciona sin descargar nada más.
+2. Mete ese bloque dentro de `index.html`. Las cartas no son imágenes: las dibuja el propio
+   código (sección 8), así que el juego es un único archivo de unos 60 KB que funciona sin
+   descargar nada más.
 3. Escribe dos versiones:
    - `dist/mus.html`: para publicar en Claude.
    - `docs/index.html`, más el icono, `manifest.webmanifest` y `sw.js`: para GitHub Pages.
@@ -442,19 +449,17 @@ bloque `@media`.
 
 **Cambiar el texto de las reglas**: en `index.html`, dentro de `<section … id="rules">`.
 
-**Volver a retocar las cartas**: las imágenes originales vienen de la baraja de Heraclio
-Fournier de 1878 en Wikimedia Commons (dominio público). Para cada carta descargada a
-1.280 px se usó ImageMagick y cwebp:
+**Cambiar el dibujo de las cartas**: en `src/cardArt.ts`.
+- `PIP` tiene el símbolo de cada palo y `FIGURE` las figuras (sota, caballo y rey). Están
+  dibujados en SVG dentro de una caja de 40 × 40: cada `<path>`, `<rect>` o `<circle>` es una
+  forma, y `fill` es su color.
+- `SUIT_COLOR` tiene el color del número de cada palo.
+- `LAYOUT` dice dónde va cada pinta en los números del 1 al 7, en una carta de 200 × 316.
+- `aliasMark` dibuja la corona dorada del 3 y el «1» dorado del 2.
+- `backSvg` dibuja el reverso.
 
-```bash
-magick original.png -wavelet-denoise 4% -filter Lanczos -resize 500x \
-  -channel R -level 7%,96% -channel G -level 7%,91% -channel B -level 7%,80% +channel \
-  -modulate 100,122 -unsharp 0x1.0+1.2+0.02 retocada.png
-cwebp -q 78 -alpha_q 85 -sharp_yuv retocada.png -o assets/cards/oros-12.webp
-```
-
-Los nombres son `palo-número.webp` (por ejemplo `copas-7.webp` o `espadas-10.webp`), más
-`back.webp` para el reverso.
+Una forma cómoda de experimentar es copiar un `<path>` en un editor de SVG en línea, cambiarlo
+allí viendo el resultado y pegarlo de vuelta.
 
 ---
 

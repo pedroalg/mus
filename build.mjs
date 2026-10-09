@@ -3,13 +3,7 @@
 //   docs/          app web instalable y offline para GitHub Pages
 import { build } from 'esbuild';
 import { createHash } from 'node:crypto';
-import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
-
-const cards = {};
-for (const f of await readdir('assets/cards')) {
-  const b64 = (await readFile(`assets/cards/${f}`)).toString('base64');
-  cards[f.replace('.webp', '')] = `data:image/webp;base64,${b64}`;
-}
+import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 
 const out = await build({
   entryPoints: ['src/main.ts'],
@@ -21,7 +15,7 @@ const out = await build({
 });
 const js = out.outputFiles[0].text.replace(/<\/script/g, '<\\/script');
 const page = (await readFile('index.html', 'utf8'))
-  .replace('<!--SCRIPT-->', () => `<script>var __CARDS__=${JSON.stringify(cards)};</script>\n<script>${js}</script>`);
+  .replace('<!--SCRIPT-->', () => `<script>${js}</script>`);
 
 await mkdir('dist', { recursive: true });
 await writeFile('dist/mus.html', page);
@@ -52,7 +46,9 @@ ${page}
 </body>
 </html>
 `;
-const version = createHash('sha1').update(site).digest('hex').slice(0, 10);
+const hash = createHash('sha1').update(site);
+for (const f of ['icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) hash.update(await readFile(`pwa/${f}`));
+const version = hash.digest('hex').slice(0, 10);
 await mkdir('docs', { recursive: true });
 await writeFile('docs/index.html', site);
 await writeFile('docs/sw.js', (await readFile('pwa/sw.js', 'utf8')).replace('__VERSION__', version));

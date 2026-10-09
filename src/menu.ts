@@ -1,8 +1,7 @@
 import type { Game } from './game.ts';
 import { loadSettings, loadStats, saveSettings, type Settings, type Stats } from './settings.ts';
 import type { Ui } from './ui.ts';
-
-declare const __CARDS__: Record<string, string>;
+import { cardSvg } from './cardArt.ts';
 
 const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
 const SCREENS = ['#menu', '#rules', '#settings', '#gameover'];
@@ -24,9 +23,9 @@ export class Menu {
     this.ui = ui;
     this.onNew = onNew;
 
-    // Abanico con los cuatro reyes de 1878
-    $('#fan').innerHTML = ['oros', 'copas', 'espadas', 'bastos']
-      .map((suit, i) => `<div class="card" style="--r:${-21 + i * 14}deg;--d:${120 + i * 90}ms"><img src="${__CARDS__[`${suit}-12`]}" alt="" draggable="false"></div>`)
+    // Abanico con los cuatro reyes
+    $('#fan').innerHTML = (['oros', 'copas', 'espadas', 'bastos'] as const)
+      .map((suit, i) => `<div class="card" style="--r:${-21 + i * 14}deg;--d:${120 + i * 90}ms">${cardSvg({ n: 12, suit })}</div>`)
       .join('');
 
     $('#m-new').onclick = () => this.onNew();
