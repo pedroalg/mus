@@ -8,6 +8,8 @@ para tenerlo como app a pantalla completa y sin conexión.
 
 ## Desarrollo
 
+Para entender el código sin saber TypeScript, lee [COMO-FUNCIONA.md](COMO-FUNCIONA.md).
+
 ```bash
 npm install
 npm test        # reglas, señas y 200 partidas entre bots
