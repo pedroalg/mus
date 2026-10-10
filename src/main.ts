@@ -2,25 +2,22 @@ import { type Events, Game } from './game.ts';
 import { Bot } from './bots.ts';
 import { Abort, Human, Ui } from './ui.ts';
 import { Menu } from './menu.ts';
-import { loadSettings, recordResult } from './settings.ts';
+import { loadSettings, recordResult, saveCast } from './settings.ts';
+import { applyCast, SEAT_CHAR, type Cast } from './characters.ts';
 
 const ui = new Ui();
-const menu = new Menu(ui, () => { startGame(); });
+const menu = new Menu(ui, cast => { startGame(cast); });
 ui.applySettings(loadSettings());
 
-async function startGame() {
+async function startGame(cast: Cast) {
+  saveCast(cast);
+  applyCast(cast);
+  ui.applyCast();
   const settings = loadSettings();
   ui.applySettings(settings);
-  // Los tres bots juegan al nivel elegido. Los rivales se pasan señas entre ellos (sin que las
-  // veas) salvo en fácil; las de Iñaki dependen del ajuste «Señas del compañero».
-  const bot = (senas: boolean) => {
-    const b = new Bot();
-    b.level = settings.nivel;
-    b.senasOn = senas;
-    return b;
-  };
-  const rivalSenas = settings.nivel !== 'facil';
-  const partner = bot(settings.senas);
+  // Cada bot juega según su personaje; las señas de tu compañero dependen del ajuste
+  const [right, partner, left] = [1, 2, 3].map(s => new Bot(SEAT_CHAR[s]!.traits));
+  partner.senasOn = settings.senas;
 
   // Los avisos de la partida pasan por aquí para que una partida abandonada se corte sola.
   let gen = 0;
@@ -31,7 +28,7 @@ async function startGame() {
     lanceDone: async r => { ui.check(gen); await ui.lanceDone(r); ui.check(gen); },
     update: () => { if (gen === ui.gen) ui.update(); },
   };
-  const game = new Game([new Human(ui), bot(rivalSenas), partner, bot(rivalSenas)], ev, settings.target);
+  const game = new Game([new Human(ui), right, partner, left], ev, settings.target);
   game.mano = Math.floor(Math.random() * 4);
   gen = ui.newSession(game);
   menu.inGame = true;
@@ -49,7 +46,7 @@ async function startGame() {
   }
   menu.inGame = false;
   const again = await menu.gameOver(game, recordResult(game.winner === 0));
-  if (again) startGame();
+  if (again) startGame(cast);
   else menu.show();
 }
 

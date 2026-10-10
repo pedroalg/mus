@@ -7,6 +7,7 @@ import { SENAS, senasFor, strength } from './bots.ts';
 import { BOT_DELAY, type Settings } from './settings.ts';
 import { backSvg, cardSvg } from './cardArt.ts';
 import { avatarSvg, type Expr } from './avatars.ts';
+import { flavor, SEAT_CHAR } from './characters.ts';
 
 const NAME: Record<number, string> = { 1: 'as', 10: 'sota', 11: 'caballo', 12: 'rey' };
 const PLURAL: Record<number, string> = {
@@ -174,7 +175,7 @@ export class Ui implements Events {
       if (!b || !this.canSign()) return;
       const sena = SENAS[b.dataset.e as keyof typeof SENAS];
       this.game.humanSena(sena);
-      this.setSaid(0, `${sena.face} a Iñaki`);
+      this.setSaid(0, `${sena.face} a ${SEAT_NAME[2]}`);
       this.log(`<b>Tú</b> ${SENA_LABEL[b.dataset.e as keyof typeof SENAS].toLowerCase()} <em>(${senaShort(sena.meaning)})</em>`);
       this.toggleSenas(false);
     });
@@ -294,7 +295,16 @@ export class Ui implements Events {
     await this.wait(this.botDelay * 2 + 300);
   }
 
+  /** Pone el nombre del compañero de esta partida en el panel de señas. */
+  applyCast() {
+    const p = SEAT_NAME[2];
+    $('#sena-panel .ayuda-head span').textContent = `Seña a ${p}`;
+    $('#sena-panel').setAttribute('aria-label', `Señas a ${p}`);
+    $('#sena-btn').setAttribute('aria-label', `Hacer una seña a ${p}`);
+  }
+
   async say(seat: number, text: string) {
+    if (seat > 0) text = flavor(SEAT_CHAR[seat], text);
     $(`.seat-${seat} .bubble`).classList.remove('sena');
     const b = $(`.seat-${seat} .bubble`);
     b.textContent = text;
@@ -359,7 +369,7 @@ export class Ui implements Events {
       } else {
         // Bots: cara con aro de su pareja (claro si le toca) y la ficha de mano encima, sin mover el nombre
         const ring = s === g.turn ? 'turn' : team(s) === 0 ? 'us' : 'them';
-        el.querySelector('.avatar')!.innerHTML = avatarSvg(s, s === 2 ? this.partnerExpr : 'neutral', ring)
+        el.querySelector('.avatar')!.innerHTML = avatarSvg(SEAT_CHAR[s]!.id, s === 2 ? this.partnerExpr : 'neutral', ring)
           + (s === g.mano ? '<span class="tok" title="Es mano: habla primero y gana los empates">Mano</span>' : '');
         el.querySelector('.name')!.textContent = SEAT_NAME[s];
         el.querySelector('.said')!.innerHTML = s === g.turn ? '…' : this.saidText[s];
@@ -566,8 +576,9 @@ export class Human implements Agent {
       opts.push({ label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3, confirm: '¿Seguro?' });
     }
     if (partnerDeclined) {
-      // Iñaki no ha querido: la última palabra es tuya
-      return this.ui.choose(ordago ? `Iñaki no quiere el órdago. ¿Lo quieres tú?` : `Iñaki no quiere. ¿Quieres tú?`, opts, true, true);
+      // Tu compañero no ha querido: la última palabra es tuya
+      const p = SEAT_NAME[2];
+      return this.ui.choose(ordago ? `${p} no quiere el órdago. ¿Lo quieres tú?` : `${p} no quiere. ¿Quieres tú?`, opts, true, true);
     }
     return this.ui.choose(ordago ? `¡Órdago a ${name}!` : `Os envidan ${amount} a ${name}`, opts);
   }

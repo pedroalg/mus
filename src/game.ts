@@ -7,7 +7,8 @@ export type Lance = 'grande' | 'chica' | 'pares' | 'juego' | 'punto';
 export const LANCE_NAME: Record<Lance, string> = {
   grande: 'Grande', chica: 'Chica', pares: 'Pares', juego: 'Juego', punto: 'Punto',
 };
-// Asientos en orden de juego (hacia la derecha): 0 tú, 1 Paco (derecha), 2 Iñaki (compañero), 3 Maite (izquierda).
+// Asientos en orden de juego (hacia la derecha): 0 tú, 1 rival de la derecha, 2 compañero,
+// 3 rival de la izquierda. Los nombres cambian con el reparto de cada partida (`applyCast`).
 export const SEAT_NAME = ['Tú', 'Paco', 'Iñaki', 'Maite'];
 export const TEAM_NAME = ['Nosotros', 'Ellos'];
 export const team = (seat: number) => seat % 2;

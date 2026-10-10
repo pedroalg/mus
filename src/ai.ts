@@ -1,4 +1,4 @@
-// Cerebro de los bots de nivel normal y difícil: estima la probabilidad de que su pareja gane
+// Cerebro de los bots: estima la probabilidad de que su pareja gane
 // un lance simulando muchos repartos de las cartas que no ve, y descartando los repartos que
 // no encajan con lo que se sabe en la mesa (declaraciones de pares y juego, y las señas del
 // compañero).
@@ -20,7 +20,7 @@ export interface TableInfo {
   senasFor: Expr[][];
   /** Quién ha envidado en esta mano y en qué lance. */
   bets: { seat: number; lance: Lance }[];
-  /** Quién ha pasado pudiendo envidar, y en qué lance (dato disponible para futuros niveles). */
+  /** Quién ha pasado pudiendo envidar, y en qué lance (dato disponible para futuros personajes). */
   passes: { seat: number; lance: Lance }[];
 }
 

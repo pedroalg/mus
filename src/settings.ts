@@ -1,19 +1,18 @@
-// Ajustes y marcador de partidas, guardados en este dispositivo.
+// Ajustes, marcador de partidas y última mesa, guardados en este dispositivo.
+import { DEFAULT_CAST, type Cast } from './characters.ts';
 
 export type Speed = 'lenta' | 'normal' | 'rapida';
-export type Level = 'facil' | 'normal' | 'dificil';
 
 export interface Settings {
   target: number;
   speed: Speed;
   senas: boolean;
   ayuda: boolean;
-  nivel: Level;
 }
 
 export interface Stats { won: number; lost: number }
 
-const DEFAULTS: Settings = { target: 40, speed: 'normal', senas: true, ayuda: true, nivel: 'normal' };
+const DEFAULTS: Settings = { target: 40, speed: 'normal', senas: true, ayuda: true };
 const SETTINGS_KEY = 'mus.settings';
 const STATS_KEY = 'mus.stats';
 
@@ -41,6 +40,11 @@ export const loadSettings = () => read(SETTINGS_KEY, DEFAULTS);
 export const saveSettings = (s: Settings) => write(SETTINGS_KEY, s);
 
 export const loadStats = () => read<Stats>(STATS_KEY, { won: 0, lost: 0 });
+
+/** Última mesa elegida. */
+const CAST_KEY = 'mus.cast';
+export const loadCast = () => read<Cast>(CAST_KEY, DEFAULT_CAST);
+export const saveCast = (c: Cast) => write(CAST_KEY, c);
 
 export function resetStats(): Stats {
   const s = { won: 0, lost: 0 };

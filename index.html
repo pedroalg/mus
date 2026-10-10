@@ -420,6 +420,39 @@ body.my-turn #app::after {
 .seg input:checked + span { background: var(--us); color: var(--ink); }
 .seg input:focus-visible + span { outline: 3px solid var(--chalk); outline-offset: -3px; }
 
+/* Elige mesa */
+.mesa-list { display: grid; gap: 8px; padding-top: 14px; }
+.mesa-card {
+  display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 12px; min-height: 0;
+  font-family: var(--body); font-weight: 400;
+}
+.mc-faces { display: flex; flex: none; }
+.mc-av { width: 52px; height: 52px; display: block; }
+.mc-av + .mc-av { margin-left: -12px; }
+.mc-av svg, .cc-av svg { display: block; width: 100%; height: 100%; }
+.mc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mc-text b { font-size: 19px; }
+.mc-text span { font-size: 15px; color: var(--chalk-dim); }
+.mc-text .mc-who { color: var(--them); font-size: 14px; }
+.mesa-sub { margin: 22px 0 6px; font-size: 21px; color: var(--us); }
+.cast-pick { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.pick-row { min-width: 0; }
+.screen { grid-template-columns: minmax(0, 1fr); }
+.sheet-inner { min-width: 0; }
+.pick-row h4 { margin: 0 0 6px; font-size: 16px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.char-chip {
+  flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: 72px; padding: 6px 2px; min-height: 0; font-family: var(--body); font-size: 13px; font-weight: 700;
+}
+.char-chip.on { background: var(--us); color: var(--ink); }
+.char-chip:disabled { opacity: 0.3; }
+.cc-av { width: 46px; height: 46px; display: block; }
+.ficha { margin: 6px 0 0; font-size: 15px; color: var(--chalk-dim); line-height: 1.4; }
+.ficha b { color: var(--chalk); }
+.ficha .st { color: var(--us); letter-spacing: 0.05em; }
+.mesa-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; padding-block: 18px 24px; }
+
 .go-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .kicker { margin: 0; font-size: 13px; letter-spacing: 0.14em; color: var(--chalk-dim); }
 #go-title { margin: 0; font-family: var(--display); font-size: clamp(56px, 14vw, 96px); line-height: 1; }
@@ -670,6 +703,16 @@ body.my-turn #app::after {
   </div>
 </section>
 
+<section class="screen sheet" id="mesa" hidden>
+  <div class="sheet-inner">
+    <header class="sheet-head"><h2>Elige mesa</h2><button class="back">Volver</button></header>
+    <div class="mesa-list" id="mesa-list"></div>
+    <h3 class="mesa-sub">A tu gusto</h3>
+    <div class="cast-pick" id="cast-pick"></div>
+    <div class="mesa-actions"><button id="cast-random">Al azar</button><button id="cast-play" class="primary">Jugar con esta mesa</button></div>
+  </div>
+</section>
+
 <section class="screen sheet" id="rules" hidden>
   <div class="sheet-inner">
     <header class="sheet-head"><h2>Cómo se juega</h2><button class="back">Volver</button></header>
@@ -703,6 +746,19 @@ body.my-turn #app::after {
       </ul>
       <p>Si todos pasan en grande, chica o punto, el lance vale 1 punto para quien lo gane. Los pares y el juego siempre suman sus puntos.</p>
 
+      <h3>Personajes</h3>
+      <p>Al empezar eliges mesa: una preparada, de la más fácil a la más difícil, o a tu gusto. Cada personaje juega a su manera, y las estrellas dicen lo bien que juega:</p>
+      <ul>
+        <li><b>Txomin</b> ★★★★★: veterano, lee los envites y elige bien el órdago.</li>
+        <li><b>Maite</b> ★★★★: calculadora; casi nunca farolea.</li>
+        <li><b>Doña Pili</b> ★★★★: muy prudente; si envida, va en serio.</li>
+        <li><b>Iñaki</b> ★★★★: sólido; tu compañero por defecto.</li>
+        <li><b>Rosa</b> ★★★: paciente, pide mus hasta tener buena mano.</li>
+        <li><b>Lucía</b> ★★: impulsiva, sube siempre.</li>
+        <li><b>Paco</b> ★★: farolero de bar.</li>
+        <li><b>Andoni</b> ★: lo quiere todo.</li>
+      </ul>
+
       <h3>Señas</h3>
       <p>Tu compañero te hará señas de vez en cuando para contarte qué lleva. Tú también puedes hacérselas con el botón 😉 de tu fila, y él las tendrá en cuenta al jugar (también lo que declaras y lo que envidas).</p>
       <table class="senas-table">
@@ -730,15 +786,6 @@ body.my-turn #app::after {
           <label><input type="radio" name="target" value="40" id="t40"><span>40 puntos</span></label>
         </div>
         <p class="hint">Se aplica a la próxima partida.</p>
-      </fieldset>
-      <fieldset>
-        <legend>Nivel de los bots</legend>
-        <div class="seg">
-          <label><input type="radio" name="nivel" value="facil" id="nv-f"><span>Fácil</span></label>
-          <label><input type="radio" name="nivel" value="normal" id="nv-n"><span>Normal</span></label>
-          <label><input type="radio" name="nivel" value="dificil" id="nv-d"><span>Difícil</span></label>
-        </div>
-        <p class="hint">Fácil: miran solo sus cartas. Normal: calculan sus opciones y leen los envites. Difícil: calculan mejor, miran el marcador y los rivales se pasan señas. Se aplica a la próxima partida.</p>
       </fieldset>
       <fieldset>
         <legend>Velocidad de los bots</legend>
