@@ -22,6 +22,7 @@ for (const target of [url, url + '?desde=icono', url + 'index.html']) {
   try {
     await page.goto(target, { waitUntil: 'load', timeout: 10000 });
     await page.click('#m-new', { timeout: 3000 });
+    await page.click('[data-table]', { timeout: 3000 }); // primera mesa preparada
     await page.waitForTimeout(1200);
     const r = await page.evaluate(() => ({
       cartas: document.querySelectorAll('.seat-0 .card').length,
