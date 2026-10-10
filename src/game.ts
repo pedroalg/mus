@@ -21,6 +21,8 @@ export interface ReplyCtx extends BetCtx {
   ordago: boolean;
   /** Lo que se lleva quien envidó si no se le quiere. */
   prev: number;
+  /** Su compañero ya ha dicho «no quiero»: si este tampoco quiere, no se quiere. */
+  partnerDeclined?: boolean;
 }
 
 export interface Agent {
@@ -271,7 +273,7 @@ export class Game {
         if (b.kind === 'paso') this.info.passes.push({ seat: s, lance });
         if (b.kind !== 'paso') {
           this.info.bets.push({ seat: s, lance });
-          await this.envite(res, team(s), b);
+          await this.envite(res, s, b);
           envidado = true;
           break;
         }
@@ -282,26 +284,37 @@ export class Game {
     await this.ev.lanceDone?.(res);
   }
 
-  /** Quien responde por un equipo: tú si te toca hablar, si no el primero de la pareja. */
-  private responder(players: number[], t: number): number {
-    if (team(0) === t && players.includes(0)) return 0;
-    return players.find(s => team(s) === t)!;
+  /**
+   * Quiénes contestan a un envite: los de la otra pareja que juegan el lance, empezando por el
+   * que va a continuación de quien envidó.
+   */
+  private defenders(players: number[], speaker: number): number[] {
+    return [1, 2, 3].map(i => (speaker + i) % 4).filter(s => players.includes(s) && team(s) !== team(speaker));
   }
 
   private async envite(res: LanceResult, bettor: number, first: Bet) {
     let amount = first.kind === 'envido' ? first.amount : 0;
     let ordago = first.kind === 'ordago';
     let prev = 1; // lo que se lleva quien envida si no se le quiere
-    let attacker = bettor;
+    let speaker = bettor; // quien hizo el último envite o la última subida
+    let attacker = team(bettor);
     for (;;) {
       res.state = 'envite';
       res.amount = amount;
       res.winner = attacker;
       if (ordago) res.state = 'ordago';
       this.ev.update();
-      const s = this.responder(res.players, 1 - attacker);
-      const r = await this.ask(s, a => a.reply({ ...this.ctx(s, res.lance), amount, ordago, prev }));
-      await this.ev.say(s, replyText(r));
+      // Contesta primero quien va a continuación; si no quiere, aún puede querer su compañero
+      let s = speaker;
+      let r: Reply = { kind: 'noquiero' };
+      let partnerDeclined = false;
+      for (const d of this.defenders(res.players, speaker)) {
+        s = d;
+        r = await this.ask(d, a => a.reply({ ...this.ctx(d, res.lance), amount, ordago, prev, partnerDeclined }));
+        await this.ev.say(d, replyText(r));
+        if (r.kind !== 'noquiero') break;
+        partnerDeclined = true;
+      }
       if (r.kind === 'quiero') break;
       if (r.kind === 'noquiero') {
         res.state = 'noquerido';
@@ -315,6 +328,7 @@ export class Game {
       if (r.kind === 'ordago') ordago = true;
       else amount += r.amount;
       attacker = 1 - attacker;
+      speaker = s;
     }
     res.winner = undefined;
     res.state = ordago ? 'ordago' : 'querido';

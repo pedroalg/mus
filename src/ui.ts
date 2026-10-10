@@ -419,12 +419,13 @@ export class Ui implements Events {
     document.body.classList.toggle('my-turn', on);
   }
 
-  choose<T>(prompt: string, opts: Option<T>[], turn = true): Promise<T> {
+  /** `keep`: la pregunta se ve también en el móvil (cuando el centro no basta para entenderla). */
+  choose<T>(prompt: string, opts: Option<T>[], turn = true, keep = false): Promise<T> {
     return new Promise((resolve, reject) => {
       this.rejectPending = reject;
       this.myTurn(turn);
       const bar = $('#actions');
-      bar.innerHTML = prompt ? `<p class="prompt">${turn ? '<span class="tetoca">Te toca</span>' : ''}${prompt}</p>` : '';
+      bar.innerHTML = prompt ? `<p class="prompt${keep ? ' keep' : ''}">${turn ? '<span class="tetoca">Te toca</span>' : ''}${prompt}</p>` : '';
       const slotted = opts.some(o => o.slot !== undefined);
       const row = document.createElement('div');
       row.className = slotted ? 'slots' : 'btns';
@@ -554,7 +555,7 @@ export class Human implements Agent {
     ]);
   }
 
-  reply({ lance, amount, ordago }: ReplyCtx) {
+  reply({ lance, amount, ordago, partnerDeclined }: ReplyCtx) {
     const name = LANCE_NAME[lance].toLowerCase();
     const opts: Option<Reply>[] = [
       { label: 'No quiero', value: { kind: 'noquiero' }, slot: 0 },
@@ -563,6 +564,10 @@ export class Human implements Agent {
     if (!ordago) {
       opts.push({ label: '+2', value: { kind: 'envido', amount: 2 }, slot: 2 });
       opts.push({ label: 'Órdago', value: { kind: 'ordago' }, kind: 'danger', slot: 3, confirm: '¿Seguro?' });
+    }
+    if (partnerDeclined) {
+      // Iñaki no ha querido: la última palabra es tuya
+      return this.ui.choose(ordago ? `Iñaki no quiere el órdago. ¿Lo quieres tú?` : `Iñaki no quiere. ¿Quieres tú?`, opts, true, true);
     }
     return this.ui.choose(ordago ? `¡Órdago a ${name}!` : `Os envidan ${amount} a ${name}`, opts);
   }

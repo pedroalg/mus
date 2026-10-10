@@ -247,7 +247,9 @@ Toda la mano está en la función `playHand()`, que lee casi como un guion:
 ### Los envites (`playLance` y `envite`)
 
 En cada lance, el árbitro da la palabra por orden. Si todos pasan, el lance queda «en paso».
-Si alguien envida, entra en `envite()`, que es un bucle de ida y vuelta:
+Si alguien envida, entra en `envite()`, que es un bucle de ida y vuelta. Contesta primero el
+de la otra pareja que va a continuación del que envidó (`defenders()`); si dice «no quiero»,
+contesta su compañero, y basta con que uno quiera para que el envite quede aceptado:
 
 - **Quiero**: el envite queda aceptado y se cobra en el recuento.
 - **No quiero**: quien envidó cobra en el acto. Cobra 1 si era el primer envite, o lo que ya

@@ -1,7 +1,7 @@
 // Service worker: guarda el juego en el dispositivo para poder jugar totalmente sin conexión.
 // El juego se abre siempre desde lo guardado, al instante y con o sin red. Si hay red, se baja
 // la versión nueva en segundo plano y se usa la próxima vez que se abra.
-const CACHE = 'mus-d7dce6402f';
+const CACHE = 'mus-be8bec18dd';
 const PAGE = './index.html';
 const CORE = ['./', PAGE, './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
