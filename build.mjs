@@ -14,7 +14,14 @@ const out = await build({
   write: false,
 });
 const js = out.outputFiles[0].text.replace(/<\/script/g, '<\\/script');
+
+// Fuente incrustada (Atkinson Hyperlegible, licencia OFL): el juego no depende de internet
+const font = async (weight) => `@font-face { font-family: "Atkinson Hyperlegible"; font-style: normal; font-weight: ${weight}; `
+  + `font-display: swap; src: url(data:font/woff2;base64,${(await readFile(`pwa/fonts/atkinson-${weight}.woff2`)).toString('base64')}) format("woff2"); }`;
+const fonts = `<style>${await font(400)}\n${await font(700)}</style>`;
+
 const page = (await readFile('index.html', 'utf8'))
+  .replace('<!--FONTS-->', () => fonts)
   .replace('<!--SCRIPT-->', () => `<script>${js}</script>`);
 
 await mkdir('dist', { recursive: true });

@@ -433,9 +433,17 @@ no es el suyo, se detiene con un aviso `Abort`. Así nunca hay dos partidas a la
 ### Cómo funciona sin conexión
 
 `sw.js` es un **service worker**: un pequeño programa que el navegador instala la primera
-vez que abres el juego y que guarda una copia de todo. Cada vez que abres el juego intenta
-descargar la versión nueva; si no hay conexión, usa la copia guardada. Cada build lleva un
-número de versión distinto, y así el iPhone sabe cuándo tiene que actualizar.
+vez que abres el juego y que guarda una copia de todo. El juego se abre **siempre desde esa
+copia**, al instante y con o sin red; si hay red, se descarga la versión nueva en segundo plano
+y se usa la siguiente vez. Cada build lleva un número de versión distinto, y así el iPhone sabe
+cuándo tiene que actualizar.
+
+La fuente va incrustada en la página (`pwa/fonts/`, licencia OFL), así que el juego no pide
+nada a internet. Para comprobar el modo sin conexión con Chrome:
+
+```bash
+npm run offline -- https://pedroalg.github.io/mus/
+```
 
 ### Publicar
 

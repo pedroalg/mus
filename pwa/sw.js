@@ -1,8 +1,9 @@
-// Service worker: guarda el juego en el iPad para poder jugar sin conexión.
-// La página se pide primero a la red (para recibir actualizaciones) y, si no hay red, sale de la caché.
-// El resto (iconos, fuentes) sale de la caché y solo se pide a la red la primera vez.
+// Service worker: guarda el juego en el dispositivo para poder jugar totalmente sin conexión.
+// El juego se abre siempre desde lo guardado, al instante y con o sin red. Si hay red, se baja
+// la versión nueva en segundo plano y se usa la próxima vez que se abra.
 const CACHE = 'mus-__VERSION__';
-const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
+const PAGE = './index.html';
+const CORE = ['./', PAGE, './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)));
@@ -14,23 +15,35 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-function store(req, res) {
-  if (res.ok || res.type === 'opaque') {
-    const copy = res.clone();
-    caches.open(CACHE).then(c => c.put(req, copy));
-  }
-  return res;
+/** Pide a la red y, si responde bien, guarda la copia. Sin red, no hace nada. */
+function refresh(req, key) {
+  return fetch(req)
+    .then(res => {
+      if (res.ok) caches.open(CACHE).then(c => c.put(key, res.clone()));
+      return res;
+    })
+    .catch(() => undefined);
 }
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET') return;
+  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+
+  // Abrir el juego (con o sin «?algo» detrás): siempre la página guardada, sea cual sea la dirección
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(res => store(req, res))
-        .catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html'))),
+      caches.match(PAGE).then(hit => {
+        const update = refresh(req, PAGE);
+        if (hit) {
+          e.waitUntil(update);
+          return hit;
+        }
+        return update.then(res => res || Response.error());
+      }),
     );
     return;
   }
-  e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => store(req, res))));
+
+  // Iconos y demás: lo guardado; si no está, la red
+  e.respondWith(caches.match(req).then(hit => hit || refresh(req, req).then(res => res || Response.error())));
 });
